@@ -1,0 +1,32 @@
+---
+description: PackForge（匠包）全局项目约定与开发约束
+alwaysApply: true
+---
+
+# PackForge 全局规则
+
+## 产品
+
+- 中文名「匠包」、英文名 PackForge：本地 Android Gradle 打包工作台。
+- 只用项目自带 `gradlew` / `gradlew.bat`，禁止依赖 Android Studio IDE 打包路径。
+- 需求以 [docs/PRD.md](docs/PRD.md) 为准；实现与 PRD 冲突时先改 PRD 再改代码。
+
+## 技术栈（锁定）
+
+- Electron + React + TypeScript + Vite + Tailwind + Zustand
+- 配置：`electron-store`；签名密码：`keytar`
+- 签名：AGP `-Pandroid.injected.signing.*`，不改工程 `build.gradle(.kts)`
+- 打包分发：`electron-builder`（macOS / Windows）
+
+## 硬性约束
+
+- **不提供** JDK 在线下载或应用内缓存安装包；仅导入本机 JDK 路径。
+- **零遥测**；MVP 默认无出站网络（除非用户显式触发且已写入 PRD）。
+- 密码不进明文配置 / 工程文件；日志与命令预览必须脱敏。
+- 不把 keystore 二进制复制进应用数据目录（默认只存路径）。
+
+## 协作
+
+- 对用户使用**简体中文**回复。
+- Commit message 简洁，侧重 **why**，1–2 句即可。
+- 未要求时不主动 commit / push；用户要求提交并推送时使用项目 skill `commit-and-push`。
