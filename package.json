@@ -10,7 +10,8 @@
     "build:renderer": "vite build",
     "build:electron": "node scripts/build-electron.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
-    "test": "node --experimental-strip-types --test src/shared/*.test.ts electron/services/*.test.ts"
+    "test": "node --experimental-strip-types --test src/shared/*.test.ts electron/services/*.test.ts",
+    "rebuild": "electron-rebuild -f -w keytar"
   },
   "packageManager": "pnpm@11.21.0",
   "engines": {
@@ -19,11 +20,13 @@
   },
   "dependencies": {
     "electron-store": "^8.2.0",
+    "keytar": "^7.9.0",
     "lightningcss": "^1.33.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

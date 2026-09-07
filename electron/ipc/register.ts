@@ -12,9 +12,15 @@ import {
 import { discoverVariants, isBuildKind, previewTaskName } from '../services/variants'
 import { importJdk, listJdks, removeJdk, setDefaultJdk } from '../services/jdk'
 import {
+  buildSigningInjectArgs,
+  deleteSigningProfile,
+  listSigningProfiles,
+  parseSigningProfileInput,
+  upsertSigningProfile,
+} from '../services/signing'
+import {
   getRecentProjects,
   getSettingsFromStore,
-  getSigningProfiles,
   setRecentProjects,
   setSettingsInStore,
 } from '../services/store'
@@ -24,6 +30,25 @@ async function pickDirectory(): Promise<Result<string>> {
   const options = {
     title: '选择文件夹',
     properties: ['openDirectory' as const],
+  }
+  const picked = win
+    ? await dialog.showOpenDialog(win, options)
+    : await dialog.showOpenDialog(options)
+  if (picked.canceled || picked.filePaths.length === 0) {
+    return ok('')
+  }
+  return ok(picked.filePaths[0])
+}
+
+async function pickFile(): Promise<Result<string>> {
+  const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+  const options = {
+    title: '选择 keystore 文件',
+    properties: ['openFile' as const],
+    filters: [
+      { name: 'Keystore', extensions: ['jks', 'keystore', 'p12', 'pfx'] },
+      { name: '所有文件', extensions: ['*'] },
+    ],
   }
   const picked = win
     ? await dialog.showOpenDialog(win, options)
@@ -44,6 +69,7 @@ const handlers: Record<InvokeMethod, Handler> = {
   getSettings: () => ok(getSettingsFromStore()),
   setSettings: (partial) => ok(setSettingsInStore((partial ?? {}) as Parameters<typeof setSettingsInStore>[0])),
   pickDirectory,
+  pickFile,
   validateProject: (projectPath) => validateProject(String(projectPath ?? '')),
   listRecentProjects: () => ok(getRecentProjects()),
   openProject: (projectPath) => {
@@ -75,9 +101,11 @@ const handlers: Record<InvokeMethod, Handler> = {
   importJdk: (homePath) => importJdk(String(homePath ?? '')),
   removeJdk: (id) => removeJdk(String(id ?? '')),
   setDefaultJdk: (id) => setDefaultJdk(id == null || id === '' ? null : String(id)),
-  listSigningProfiles: () => ok(getSigningProfiles()),
-  upsertSigningProfile: () => notImplemented('upsertSigningProfile'),
-  deleteSigningProfile: () => notImplemented('deleteSigningProfile'),
+  listSigningProfiles: () => listSigningProfiles(),
+  upsertSigningProfile: (input) => upsertSigningProfile(parseSigningProfileInput(input)),
+  deleteSigningProfile: (id) => deleteSigningProfile(String(id ?? '')),
+  buildSigningInjectArgs: (profileId) =>
+    buildSigningInjectArgs(profileId == null || profileId === '' ? null : String(profileId)),
   resolveBuildEnv: () => notImplemented('resolveBuildEnv'),
   startBuild: () => notImplemented('startBuild'),
   cancelBuild: () => notImplemented('cancelBuild'),

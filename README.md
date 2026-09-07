@@ -35,10 +35,13 @@ Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；包管理器 **p
 
 ```bash
 pnpm install
+pnpm rebuild    # 为当前 Electron 重建 keytar 原生模块（签名钥匙串）
 pnpm dev        # 启动 Vite + Electron
 pnpm typecheck  # TypeScript 严格检查
 pnpm build      # 编译渲染进程与主进程
 ```
+
+`keytar` 是原生模块，必须针对 Electron 的 Node ABI 重建。若保存签名时报钥匙串写入失败，先执行 `pnpm rebuild`。
 
 打包发布见任务 **F14**（`pnpm dist` 等，以落地后 README 为准）。
 

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import JdkSelect from '../components/JdkSelect'
 import ModuleSelect from '../components/ModuleSelect'
 import ProjectPicker from '../components/ProjectPicker'
+import SigningSelect from '../components/SigningSelect'
 import VariantConfig from '../components/VariantConfig'
-import type { BuildKind, JdkInstall, ProjectValidation, VariantDiscovery } from '../shared/types'
+import type { BuildKind, JdkInstall, ProjectValidation, SigningProfileMeta, VariantDiscovery } from '../shared/types'
 
 function packforgeApi() {
   return window.packforge
@@ -50,6 +51,8 @@ export default function WorkbenchPage() {
   const [jdkInstalls, setJdkInstalls] = useState<JdkInstall[]>([])
   const [jdkId, setJdkId] = useState('')
   const [jdkError, setJdkError] = useState<string | undefined>()
+  const [signingProfiles, setSigningProfiles] = useState<SigningProfileMeta[]>([])
+  const [signingProfileId, setSigningProfileId] = useState('')
 
   const refreshVariants = useCallback(async (projectPath: string, module: string) => {
     const api = packforgeApi()
@@ -90,6 +93,19 @@ export default function WorkbenchPage() {
       setJdkInstalls(result.data.installs)
       setJdkId(result.data.defaultId ?? '')
       setJdkError(undefined)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const api = packforgeApi()
+    if (!api) return
+    let cancelled = false
+    void api.listSigningProfiles().then((result) => {
+      if (cancelled || !result.ok) return
+      setSigningProfiles(result.data)
     })
     return () => {
       cancelled = true
@@ -158,11 +174,12 @@ export default function WorkbenchPage() {
           <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
             <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
             <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
-              选择 JDK、模块、产物类型与变体，预览将执行的 Gradle 任务名。
+              选择 JDK、签名、模块、产物类型与变体，预览将执行的 Gradle 任务名。
             </p>
             <div className="mt-3 space-y-3">
               <JdkSelect installs={jdkInstalls} value={jdkId} onChange={(id) => void changeJdk(id)} />
               {jdkError ? <p className="text-xs text-[var(--danger)]">{jdkError}</p> : null}
+              <SigningSelect profiles={signingProfiles} value={signingProfileId} onChange={setSigningProfileId} />
               {project ? (
                 <>
                   <ModuleSelect

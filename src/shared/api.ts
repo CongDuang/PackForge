@@ -41,6 +41,7 @@ export type PackforgeApi = {
   getSettings: () => Promise<Result<AppSettings>>
   setSettings: (partial: Partial<AppSettings>) => Promise<Result<AppSettings>>
   pickDirectory: () => Promise<Result<string>>
+  pickFile: () => Promise<Result<string>>
   validateProject: (projectPath: string) => Promise<Result<ProjectValidation>>
   listRecentProjects: () => Promise<Result<ProjectRef[]>>
   openProject: (projectPath: string) => Promise<Result<ProjectValidation>>
@@ -63,6 +64,9 @@ export type PackforgeApi = {
   listSigningProfiles: () => Promise<Result<SigningProfileMeta[]>>
   upsertSigningProfile: (input: SigningProfileInput) => Promise<Result<SigningProfileMeta>>
   deleteSigningProfile: (id: string) => Promise<Result<void>>
+  buildSigningInjectArgs: (
+    profileId: string | null,
+  ) => Promise<Result<{ args: string[]; previewArgs: string[] }>>
   resolveBuildEnv: (input: {
     projectPath: string
     jdkId: string | null

@@ -10,6 +10,7 @@ type TextFieldProps = {
   placeholder?: string
   multiline?: boolean
   hint?: string
+  type?: 'text' | 'password'
 }
 
 export default function TextField({
@@ -22,6 +23,7 @@ export default function TextField({
   placeholder,
   multiline,
   hint,
+  type = 'text',
 }: TextFieldProps) {
   const fieldClass =
     'w-full rounded-md border border-[var(--border)] bg-[var(--bg-base)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]'
@@ -49,7 +51,8 @@ export default function TextField({
       ) : (
         <input
           id={id}
-          type="text"
+          type={type}
+          autoComplete="off"
           value={value}
           onChange={handleChange}
           onBlur={onBlur}

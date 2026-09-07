@@ -5,6 +5,8 @@ confirmModulesPurge: false
 onlyBuiltDependencies:
   - electron
   - esbuild
+  - keytar
 allowBuilds:
   electron: true
   esbuild: true
+  keytar: true

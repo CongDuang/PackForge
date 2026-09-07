@@ -90,11 +90,12 @@ ArtifactItem {
 |------|----------------|
 | `getSettings` / `setSettings` | F04 |
 | `pickDirectory` | F05 等 |
+| `pickFile` | F09（追加） |
 | `validateProject` / `listRecentProjects` / `openProject` / `removeRecentProject` / `pinRecentProject` | F05 |
 | `listModules` | F06 |
 | `discoverVariants` / `previewTaskName` | F07 |
 | `listJdks` / `importJdk` / `removeJdk` / `setDefaultJdk` | F08 |
-| `listSigningProfiles` / `upsertSigningProfile` / `deleteSigningProfile` | F09 |
+| `listSigningProfiles` / `upsertSigningProfile` / `deleteSigningProfile` / `buildSigningInjectArgs` | F09 |
 | `resolveBuildEnv` | F10 |
 | `startBuild` / `cancelBuild` / `onBuildLog` / `onBuildStatus` | F11 |
 | `scanArtifacts` / `copyArtifactsToFolder` / `copyPathsToClipboard` / `writeFilesToClipboard` / `showItemInFolder` | F12 |
