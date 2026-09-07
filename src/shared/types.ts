@@ -16,11 +16,17 @@ export type JdkInstall = {
 
 export type SigningProfileMeta = {
   id: string
-  name: string
   storeFile: string
   keyAlias: string
   storeType?: string
   keyPasswordSameAsStore: boolean
+}
+
+/** 一工程路径一条绑定；inject=false 时 profile 为 null。 */
+export type ProjectSigningBinding = {
+  projectPath: string
+  inject: boolean
+  profile: SigningProfileMeta | null
 }
 
 export type BuildKind = 'assemble' | 'bundle'

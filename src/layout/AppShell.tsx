@@ -3,7 +3,6 @@ import Sidebar from '../components/Sidebar'
 import { DEFAULT_PAGE, type PageId } from '../navigation'
 import JdkPage from '../pages/JdkPage'
 import SettingsPage from '../pages/SettingsPage'
-import SigningPage from '../pages/SigningPage'
 import WorkbenchPage from '../pages/WorkbenchPage'
 
 function renderPage(page: PageId) {
@@ -12,8 +11,6 @@ function renderPage(page: PageId) {
       return <WorkbenchPage />
     case 'jdk':
       return <JdkPage />
-    case 'signing':
-      return <SigningPage />
     case 'settings':
       return <SettingsPage />
   }

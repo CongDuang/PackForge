@@ -1,18 +1,24 @@
 import Store from 'electron-store'
-import { DEFAULT_SETTINGS, type AppSettings, type JdkInstall, type ProjectRef, type SigningProfileMeta } from '../../src/shared/types'
+import {
+  DEFAULT_SETTINGS,
+  type AppSettings,
+  type JdkInstall,
+  type ProjectRef,
+  type ProjectSigningBinding,
+} from '../../src/shared/types'
 
 export type StoreSchema = {
   settings: AppSettings
   projects: { recent: ProjectRef[] }
   jdk: { installs: JdkInstall[]; defaultId: string | null }
-  signing: { profiles: SigningProfileMeta[] }
+  signing: { bindings: Record<string, ProjectSigningBinding> }
 }
 
 const defaults: StoreSchema = {
   settings: { ...DEFAULT_SETTINGS },
   projects: { recent: [] },
   jdk: { installs: [], defaultId: null },
-  signing: { profiles: [] },
+  signing: { bindings: {} },
 }
 
 let instance: Store<StoreSchema> | undefined
@@ -54,11 +60,29 @@ export function setJdkState(jdk: { installs: JdkInstall[]; defaultId: string | n
   getAppStore().set('jdk', jdk)
 }
 
-export function getSigningProfiles(): SigningProfileMeta[] {
-  return getAppStore().get('signing.profiles')
+export function getSigningBindings(): Record<string, ProjectSigningBinding> {
+  return getAppStore().get('signing.bindings') ?? {}
 }
 
-export function setSigningProfiles(profiles: SigningProfileMeta[]): SigningProfileMeta[] {
-  getAppStore().set('signing.profiles', profiles)
-  return profiles
+export function setSigningBindings(bindings: Record<string, ProjectSigningBinding>): void {
+  getAppStore().set('signing.bindings', bindings)
+}
+
+export function getSigningBinding(projectPath: string): ProjectSigningBinding | null {
+  return getSigningBindings()[projectPath] ?? null
+}
+
+export function setSigningBinding(binding: ProjectSigningBinding): void {
+  const next = { ...getSigningBindings(), [binding.projectPath]: binding }
+  setSigningBindings(next)
+}
+
+export function removeSigningBinding(projectPath: string): ProjectSigningBinding | null {
+  const bindings = { ...getSigningBindings() }
+  const removed = bindings[projectPath] ?? null
+  if (removed) {
+    delete bindings[projectPath]
+    setSigningBindings(bindings)
+  }
+  return removed
 }

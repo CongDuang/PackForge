@@ -14,7 +14,7 @@
 
 - 指定项目路径，自动识别 macOS / Windows 的 Wrapper 脚本
 - 导入本机已安装 JDK，打包时选择 `JAVA_HOME`（**不提供**在线下载）
-- 管理签名档案（keystore / 别名 / 密码），经 AGP injected signing 注入，**不改**工程 `build.gradle`
+- 按工程路径绑定签名（keystore / 别名 / 密码），再次打开自动带出；经 AGP injected signing 注入，**不改**工程 `build.gradle`；无独立签名管理页
 - 读取 `buildType` / `flavor`，组合如 `bundleProdRelease`、`assembleDevDebug`
 - 汇总 APK、AAB、`mapping.txt` 等产物，支持单选/多选**复制到文件夹**、**复制路径**、**文件剪贴板**（不做拖出）
 

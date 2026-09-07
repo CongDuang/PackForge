@@ -10,7 +10,7 @@
 
 ## 1. 目标
 
-建立深色「本地工坊」视觉壳层：色板 CSS 变量、侧栏四页导航、工作台占位三栏布局、正式窗口标题。
+建立深色「本地工坊」视觉壳层：色板 CSS 变量、侧栏三页导航、工作台占位三栏布局、正式窗口标题。
 
 ## 2. 非目标
 
@@ -26,10 +26,9 @@
 |----|----------|
 | `workbench` | 工作台 |
 | `jdk` | JDK 管理 |
-| `signing` | 签名管理 |
 | `settings` | 设置 |
 
-默认页：`workbench`。
+默认页：`workbench`。（v1.4：已移除独立 `signing` 签名管理页，签名在工作台按工程绑定。）
 
 ### 3.2 CSS 变量（名称与色值冻结，见 PRD §6.3）
 
@@ -59,7 +58,7 @@
 ## 4. 实现规格
 
 1. 用 Zustand 或 React state 管理「当前页面」即可（完整 store 在 F03）。
-2. 侧栏：四项可点击切换；当前项用 `--accent` 高亮。
+2. 侧栏：三项可点击切换；当前项用 `--accent` 高亮。
 3. 各页先放标题 + 一句占位说明（工程师语气，勿「魔法上云」）。
 4. 全局背景 `--bg-base`，面板 `--bg-panel`，分割线 `--border`。
 5. 主进程 `BrowserWindow` 的 `title` 与 HTML `<title>` 同步正式标题。
@@ -69,14 +68,14 @@
 
 | 操作 | 路径 |
 |------|------|
-| 新建 | `src/components/Sidebar.tsx`、`src/pages/WorkbenchPage.tsx`、`src/pages/JdkPage.tsx`、`src/pages/SigningPage.tsx`、`src/pages/SettingsPage.tsx`、`src/layout/AppShell.tsx` |
+| 新建 | `src/components/Sidebar.tsx`、`src/pages/WorkbenchPage.tsx`、`src/pages/JdkPage.tsx`、`src/pages/SettingsPage.tsx`、`src/layout/AppShell.tsx` |
 | 修改 | `src/App.tsx`、`src/index.css`、`electron/main.ts`（窗口标题） |
 
 ## 6. 自检
 
 ```bash
 pnpm dev
-# 点击四个侧栏项，页面切换正常；标题栏文案正确；深色主题可读
+# 点击三个侧栏项，页面切换正常；标题栏文案正确；深色主题可读
 ```
 
 ## 7. 验收清单

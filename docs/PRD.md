@@ -4,7 +4,7 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.3 |
+| 文档版本 | v1.4 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
@@ -15,6 +15,7 @@
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.4 | 2026-09-07 | 签名与工程路径 1:1 绑定；去掉独立「签名管理」页，改在工作台首次配置并缓存 |
 | v1.3 | 2026-09-07 | 包管理器统一为 pnpm（禁止默认 npm/yarn） |
 | v1.2 | 2026-09-07 | 产物分享取消拖出；改为复制到文件夹 / 路径 / 文件剪贴板；开发任务见 `features/` |
 | v1.1 | 2026-09-07 | 移除 JDK 在线下载/缓存能力；JDK 仅支持导入本机已安装路径 |
@@ -54,12 +55,12 @@
 | 隐私与可控性 | IDE 打包路径不可控，用户无法确认上传了什么 |
 | 命令记忆成本 | `assemble` / `bundle`、flavor、buildType 组合繁琐易错 |
 | JDK 切换 | 多项目要求不同 JDK，手动改 `JAVA_HOME` 易混 |
-| 签名管理 | keystore 路径、密码、别名分散，易写进工程文件泄露 |
+| 签名配置 | keystore 路径、密码、别名分散，易写进工程文件；多工程易选错 |
 | 产物分发 | 打完后找 APK/AAB/`mapping.txt`，再复制到文件夹或 IM，步骤多 |
 
 ### 2.3 机会
 
-做一个**纯本地、零遥测**的桌面工具：选项目 → 选 JDK / 签名 / 变体 → 一键 Gradle 打包 → 产物列表支持复制到文件夹 / 路径 / 文件剪贴板。全程不依赖 Android Studio GUI。
+做一个**纯本地、零遥测**的桌面工具：选项目 → 选 JDK / 变体 →（按工程绑定或带出签名）→ 一键 Gradle 打包 → 产物列表支持复制到文件夹 / 路径 / 文件剪贴板。全程不依赖 Android Studio GUI。
 
 ---
 
@@ -69,7 +70,7 @@
 
 1. 指定 Android 项目路径，自动识别 macOS / Windows 下应使用的 Wrapper 脚本。
 2. 导入并管理本机已安装的多个 JDK，打包时可选 `JAVA_HOME`（不提供在线下载）。
-3. 管理签名档案（keystore、密码、别名），打包时注入签名且**不修改**工程 `build.gradle`。
+3. 将签名配置（keystore、密码、别名）与工程路径绑定；打包时注入签名且**不修改**工程 `build.gradle`。无独立签名管理页。
 4. 读取并展示 `buildType` / `productFlavor`（及维度组合），拼装 `assembleXxx` / `bundleXxx` 任务。
 5. 打包结束后汇总产物（APK、AAB、`mapping.txt` 等），支持单选/多选复制到文件夹、复制路径、写入系统文件剪贴板（便于粘贴到访达/资源管理器/部分 IM）。**不做**从列表拖出到外部应用。
 6. 同一套产品覆盖 macOS 与 Windows。
@@ -102,7 +103,7 @@
 |----|------|--------|
 | US-1 | 作为开发者，我选择项目后希望工具自动找到正确的 `gradlew`，这样我不用记平台差异 | P0 |
 | US-2 | 作为开发者，我选择 JDK 17/21 再打包，这样不同项目不会互相污染环境 | P0 |
-| US-3 | 作为开发者，我选签名档案后直接打 release，且密码不写进工程文件 | P0 |
+| US-3 | 作为开发者，我首次打开某工程时绑定签名，再次打开自动带出，且密码不写进工程文件 | P0 |
 | US-4 | 作为开发者，我勾选 flavor=`Prod`、buildType=`Release`、产物类型=`AAB`，一键生成 `bundleProdRelease` | P0 |
 | US-5 | 作为开发者，打包完成后我多选 APK + mapping，复制到共享盘或通过文件剪贴板粘贴发给同事 | P0 |
 | US-6 | 作为开发者，我在多模块工程里选择正确的 `app` 模块再打包 | P0 |
@@ -113,7 +114,7 @@
 ```text
 打开匠包 → 选择/最近打开项目 → 校验 Wrapper + SDK
   →（可选）刷新变体列表 → 选择模块 / Flavor / BuildType / APK|AAB
-  → 选择 JDK + 签名档案 → 开始打包 → 实时看日志
+  → 选择 JDK → 绑定或自动带出本工程签名 → 开始打包 → 实时看日志
   → 成功 → 产物面板勾选 → 复制到文件夹 / 复制路径 / 文件剪贴板
 ```
 
@@ -243,17 +244,16 @@ android-packing-tools/
 
 ### 7.1 主导航（建议侧栏）
 
-1. **工作台**（默认）：项目 + 变体 + 打包 + 日志 + 产物
+1. **工作台**（默认）：项目 + 变体 + 本工程签名绑定 + 打包 + 日志 + 产物
 2. **JDK 管理**
-3. **签名管理**
-4. **设置**（SDK、日志目录、主题、关于）
+3. **设置**（SDK、日志目录、主题、关于）
 
 ### 7.2 工作台布局（桌面优先）
 
 ```text
 ┌──────────┬────────────────────────────┬─────────────────┐
 │ 侧栏导航  │ 项目条 + 模块/变体/产物类型   │ 产物面板         │
-│          │ JDK + 签名选择              │ 多选 / 复制操作   │
+│          │ JDK + 本工程签名绑定        │ 多选 / 复制操作   │
 │          │ [开始打包] [取消]            │                 │
 │          ├────────────────────────────┤                 │
 │          │ 构建日志（可滚动、可搜索）    │                 │
@@ -264,9 +264,8 @@ android-packing-tools/
 
 | 页面 | 内容 |
 |------|------|
-| 工作台 | 选项目、刷新变体、配置任务、执行、看日志、处理产物 |
+| 工作台 | 选项目、刷新变体、配置任务、绑定/带出本工程签名、执行、看日志、处理产物 |
 | JDK 管理 | 列表、导入本机 JDK、设默认、从列表移除（仅删登记，不删本机文件） |
-| 签名管理 | 档案列表、新建/编辑（密码走系统钥匙串）、删除、校验 keystore 可读 |
 | 设置 | Android SDK 路径、应用数据目录、是否显示高级 Gradle 参数、关于与隐私声明 |
 
 ---
@@ -352,20 +351,28 @@ android-packing-tools/
 - UI 与文档中无「下载 JDK」「缓存安装包」入口。
 - 未选 JDK 时：可回退系统默认，但需黄色警告；产品默认：**强制从已登记列表选择**。
 
-### FR-05 签名档案与注入（P0）
+### FR-05 工程签名绑定与注入（P0）
 
-**描述：** 用户创建签名档案并在打包时注入，**不修改**工程内 Gradle 脚本、不把密码写入项目文件。
+**描述：** 签名配置与**工程路径** 1:1 绑定，在工作台内完成；**无独立签名管理页**。打包时经 AGP 注入，**不修改**工程内 Gradle 脚本、不把密码写入项目文件。
 
-**档案字段：**
+**绑定主键：** 规范化后的 `projectPath`（与 FR-01 校验得到的绝对路径一致）。一工程至多一条绑定。
+
+**行为：**
+
+1. **首次打开**某工程且尚无绑定时：在工作台填写签名字段并保存；或选择「不注入签名」并保存。
+2. **再次打开**同路径：自动带出绑定（含「不注入」选择）；可改绑并覆盖缓存。
+3. 改为不注入或清除绑定时：删除该绑定对应的钥匙串条目；keystore 文件仍留在磁盘。
+
+**绑定字段（注入时）：**
 
 | 字段 | 必填 | 存储 |
 |------|------|------|
-| 显示名称 | 是 | electron-store |
-| keystore 路径 | 是 | electron-store |
-| key alias | 是 | electron-store |
-| store password | 是 | keytar |
-| key password | 是 | keytar（默认可与 store 相同，UI 提供「相同」开关） |
+| keystore 路径 | 是（注入时） | electron-store（按工程路径） |
+| key alias | 是（注入时） | electron-store |
+| store password | 是（注入时） | keytar |
+| key password | 是（注入时） | keytar（默认可与 store 相同，UI 提供「相同」开关） |
 | store type | 否 | electron-store（如 `PKCS12`） |
+| inject | 是 | electron-store：`true` 注入 / `false` 不注入 |
 
 **注入参数（AGP）：**
 
@@ -377,11 +384,15 @@ android-packing-tools/
 -Pandroid.injected.signing.store.type=<type>   # 可选
 ```
 
+`inject=false` 或不存在绑定时 → 不附加上述参数。
+
 **AC：**
 
 - Release 打包可成功签名（目标工程接受 injected signing 的前提下）。
 - 密码不以明文出现在 electron-store、项目目录、可复制的完整命令预览默认态（完整命令预览对密码打码为 `***`）。
-- 用户可选择「不使用签名注入」（例如已在工程配置 debug 签名的 debug 包）。
+- 工程 A 的绑定不会带出到工程 B；再次打开 A 自动恢复。
+- 用户可选择「不使用签名注入」并按路径记住（例如已在工程配置 debug 签名的 debug 包）。
+- UI 无独立「签名管理」导航页。
 
 ### FR-06 执行打包与日志（P0）
 
@@ -541,8 +552,12 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 ProjectRef { id, path, displayName, lastOpenedAt, pinned }
 ModuleRef { name }
 JdkInstall { id, name, version, homePath, source: import|scan }
-SigningProfile { id, name, storeFile, keyAlias, storeType?, keytarAccount }
+ProjectSigningBinding {
+  projectPath, inject,
+  profile?: { id, storeFile, keyAlias, storeType?, keyPasswordSameAsStore }
+}
 BuildRequest { projectPath, module, kind, flavorPart, buildType, jdkId, signingProfileId|null, extraArgs[] }
+  // signingProfileId：本工程绑定中 inject=true 时的 profile.id；不注入则为 null
 ArtifactItem { path, type, size, mtime, buildId }
 BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 历史
 ```
@@ -551,8 +566,8 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 
 | 数据 | 位置 |
 |------|------|
-| 配置 JSON | electron-store 默认用户数据目录（含 JDK 路径登记，不含 JDK 二进制） |
-| 密码 | keytar service=`PackForge`，account=`signing:<profileId>:store` / `:key` |
+| 配置 JSON | electron-store 默认用户数据目录（含 JDK 路径登记、`signing.bindings` 按工程路径索引；不含 JDK 二进制） |
+| 密码 | keytar service=`PackForge`，account=`signing:<profileId>:store` / `:key`（profileId 为该工程绑定内生成的 id） |
 | 本地日志（可选） | `{userData}/logs/packforge-YYYYMMDD.log` |
 
 ### 11.3 不入库内容
@@ -610,7 +625,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 | `E_NO_SDK` | 无法解析 Android SDK | 去设置填写 SDK，或配置环境变量 / local.properties |
 | `E_NO_JDK` | 未选择有效 JDK | 去 JDK 管理导入本机已安装的 JDK |
 | `E_JDK_INVALID` | JAVA_HOME 无 java 可执行文件 | 重新选择 JDK 根目录 |
-| `E_SIGN_MISSING` | 签名档案不完整或 keystore 不存在 | 检查路径与钥匙串中的密码 |
+| `E_SIGN_MISSING` | 本工程签名绑定不完整或 keystore 不存在 | 在工作台检查路径与钥匙串中的密码 |
 | `E_VARIANT_PARSE` | 无法解析任务/变体 | 尝试刷新；或手动填任务名（若开放） |
 | `E_BUILD_FAILED` | Gradle 退出码非 0 | 查看日志；常见为依赖/签名/SDK 组件缺失 |
 | `E_BUILD_CANCELLED` | 用户取消 | 可重新打包 |
@@ -651,7 +666,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 - [ ] 多模块可选模块；默认 `app`
 - [ ] 能列出或组合出 `assemble`/`bundle` × flavor × buildType，预览任务名正确
 - [ ] 导入 ≥2 个 JDK，切换后构建环境使用所选 `JAVA_HOME`
-- [ ] 配置签名档案，release 包使用 injected signing，工程文件无新增密码明文
+- [ ] 在工作台为本工程绑定签名，release 包使用 injected signing，工程文件无新增密码明文；再次打开同路径自动带出
 - [ ] 成功打出 APK 与 AAB 各至少一次（可用演示工程）
 - [ ] 产物区显示包体与 mapping（若有），支持单选/多选复制到文件夹
 - [ ] 支持文件剪贴板（目标 OS）；复制到文件夹与复制路径可用（**无拖出要求**）
@@ -679,7 +694,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 
 1. **只跑项目 Wrapper**，不跑 Android Studio 内置 Gradle。  
 2. **变体发现：** 动态 `tasks` 优先，静态解析回退。  
-3. **签名：** AGP injected properties，不改工程。  
+3. **签名：** 与工程路径绑定；AGP injected properties，不改工程；无独立签名管理页。  
 4. **密码：** keytar；UI/日志打码。  
 5. **JDK：** 仅导入本机路径并登记；不下载、不缓存安装包；MVP 强制从已登记列表选择；系统 JDK 仅作警告级回退可在设置中开启（默认关）。  
 6. **SDK：** 只读检测，设置可覆盖。  
@@ -696,7 +711,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 |---|----------|----------------|
 | 1 | 指定项目路径，自动识别 Mac/Windows gradlew | §8 FR-01，§13 |
 | 2 | 添加/管理本机 JDK，打包可选（不做在线下载） | §8 FR-04，§3.2，§11 |
-| 3 | 自定义签名文件与密码别名 | §8 FR-05，§12 |
+| 3 | 按工程绑定签名文件与密码别名 | §8 FR-05，§12 |
 | 4 | 产物带出 + 单选/多选复制到文件夹或剪贴板（无拖出） | §8 FR-07，§10，features/F12 |
 | 5 | 读取 buildType/flavor 并组合 assemble/bundle 命令 | §8 FR-03，§9 |
 | 6 | 应用名与图标按背景 vibe 生成 | §6 |

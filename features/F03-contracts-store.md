@@ -44,8 +44,11 @@ type AppError = { code: PackForgeErrorCode; message: string; detail?: string }
 ProjectRef { id: string; path: string; displayName: string; lastOpenedAt: number; pinned: boolean }
 JdkInstall { id: string; name: string; version: string; homePath: string; source: 'import' | 'scan' }
 SigningProfileMeta {
-  id: string; name: string; storeFile: string; keyAlias: string;
+  id: string; storeFile: string; keyAlias: string;
   storeType?: string; keyPasswordSameAsStore: boolean
+}
+ProjectSigningBinding {
+  projectPath: string; inject: boolean; profile: SigningProfileMeta | null
 }
 // 密码不进此结构；仅 keytar account 键约定：
 // service = 'PackForge'
@@ -57,7 +60,7 @@ BuildRequest {
   flavorPart: string; // 无 flavor 时 ''
   buildType: string;  // e.g. 'Release'
   jdkId: string;
-  signingProfileId: string | null;
+  signingProfileId: string | null; // 本工程绑定 inject=true 时的 profile.id；不注入为 null
   extraArgs: string[];
 }
 
@@ -78,7 +81,7 @@ ArtifactItem {
 | `projects.recent` | `ProjectRef[]`（最多 20） |
 | `jdk.installs` | `JdkInstall[]` |
 | `jdk.defaultId` | `string \| null` |
-| `signing.profiles` | `SigningProfileMeta[]`（无密码字段） |
+| `signing.bindings` | `Record<projectPath, ProjectSigningBinding>`（无密码字段；按规范化工程路径索引） |
 
 ### 3.5 preload API 命名空间（冻结）
 
@@ -95,7 +98,7 @@ ArtifactItem {
 | `listModules` | F06 |
 | `discoverVariants` / `previewTaskName` | F07 |
 | `listJdks` / `importJdk` / `removeJdk` / `setDefaultJdk` | F08 |
-| `listSigningProfiles` / `upsertSigningProfile` / `deleteSigningProfile` / `buildSigningInjectArgs` | F09 |
+| `getProjectSigning` / `upsertProjectSigning` / `clearProjectSigning` / `buildSigningInjectArgs` | F09 |
 | `resolveBuildEnv` | F10 |
 | `startBuild` / `cancelBuild` / `onBuildLog` / `onBuildStatus` | F11 |
 | `scanArtifacts` / `copyArtifactsToFolder` / `copyPathsToClipboard` / `writeFilesToClipboard` / `showItemInFolder` | F12 |

@@ -8,20 +8,19 @@ import type {
   BuildStatusEvent,
   JdkInstall,
   ProjectRef,
+  ProjectSigningBinding,
   ProjectValidation,
-  SigningProfileMeta,
   VariantDiscovery,
 } from './types'
 
-export type SigningProfileInput = {
-  id?: string
-  name: string
-  storeFile: string
-  keyAlias: string
+export type ProjectSigningInput = {
+  inject: boolean
+  storeFile?: string
+  keyAlias?: string
   storeType?: string
-  storePassword: string
-  keyPassword: string
-  keyPasswordSameAsStore: boolean
+  storePassword?: string
+  keyPassword?: string
+  keyPasswordSameAsStore?: boolean
 }
 
 export type ScanArtifactsInput = {
@@ -61,11 +60,14 @@ export type PackforgeApi = {
   importJdk: (homePath: string) => Promise<Result<JdkInstall>>
   removeJdk: (id: string) => Promise<Result<void>>
   setDefaultJdk: (id: string | null) => Promise<Result<void>>
-  listSigningProfiles: () => Promise<Result<SigningProfileMeta[]>>
-  upsertSigningProfile: (input: SigningProfileInput) => Promise<Result<SigningProfileMeta>>
-  deleteSigningProfile: (id: string) => Promise<Result<void>>
+  getProjectSigning: (projectPath: string) => Promise<Result<ProjectSigningBinding | null>>
+  upsertProjectSigning: (
+    projectPath: string,
+    input: ProjectSigningInput,
+  ) => Promise<Result<ProjectSigningBinding>>
+  clearProjectSigning: (projectPath: string) => Promise<Result<void>>
   buildSigningInjectArgs: (
-    profileId: string | null,
+    projectPath: string,
   ) => Promise<Result<{ args: string[]; previewArgs: string[] }>>
   resolveBuildEnv: (input: {
     projectPath: string

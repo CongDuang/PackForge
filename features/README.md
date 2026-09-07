@@ -44,7 +44,7 @@ flowchart TD
   F06[F06 多模块]
   F07[F07 变体与任务名]
   F08[F08 JDK 管理]
-  F09[F09 签名档案]
+  F09[F09 工程签名绑定]
   F10[F10 SDK 与环境]
   F11[F11 构建与日志]
   F12[F12 产物与复制]
@@ -77,7 +77,7 @@ flowchart TD
 | F06 | [F06-modules.md](F06-modules.md) | 多模块 | F05 | FR-02 |
 | F07 | [F07-variants-tasks.md](F07-variants-tasks.md) | 变体与任务名 | F06 | FR-03 §9 |
 | F08 | [F08-jdk.md](F08-jdk.md) | JDK 管理 | F03 | FR-04 |
-| F09 | [F09-signing.md](F09-signing.md) | 签名档案 | F03 | FR-05 §12 |
+| F09 | [F09-signing.md](F09-signing.md) | 工程签名绑定 | F03 F05 | FR-05 §12 |
 | F10 | [F10-sdk-env.md](F10-sdk-env.md) | SDK 与环境 | F04 F08 | FR-08 |
 | F11 | [F11-build-logs.md](F11-build-logs.md) | 构建与日志 | F07 F09 F10 | FR-06 |
 | F12 | [F12-artifacts-copy.md](F12-artifacts-copy.md) | 产物与复制 | F11 | FR-07 §10 |
@@ -94,7 +94,7 @@ flowchart TD
 | FR-02 | 多模块 | F06 |
 | FR-03 | buildType / flavor / 任务拼装 | F07 |
 | FR-04 | JDK 导入与选择（无下载） | F08 |
-| FR-05 | 签名档案 + injected signing | F09 |
+| FR-05 | 工程签名绑定 + injected signing | F09 |
 | FR-06 | 执行打包与日志 | F11 |
 | FR-07 | 产物发现与复制分享 | F12（**无拖出**） |
 | FR-08 | Android SDK 检测 | F10 |
@@ -128,7 +128,7 @@ flowchart TD
 ## 7. 完成定义（全部 F01–F14 后）
 
 - [ ] `pnpm install && pnpm dev` 可打开「匠包」
-- [ ] 主路径：选项目 → 选模块/变体 → 选 JDK →（可选）签名 → 打包 → 日志 → 复制产物
+- [ ] 主路径：选项目 → 选模块/变体 → 选 JDK → 绑定/带出本工程签名 → 打包 → 日志 → 复制产物
 - [ ] 缺 Wrapper / SDK / JDK / 构建失败时错误码与人话提示符合 PRD §15
 - [ ] 密码不进明文 store；日志与命令预览脱敏
 - [ ] 当前开发机 OS 上 `electron-builder` 能产出可安装包并启动

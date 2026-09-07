@@ -13,10 +13,10 @@ import { discoverVariants, isBuildKind, previewTaskName } from '../services/vari
 import { importJdk, listJdks, removeJdk, setDefaultJdk } from '../services/jdk'
 import {
   buildSigningInjectArgs,
-  deleteSigningProfile,
-  listSigningProfiles,
-  parseSigningProfileInput,
-  upsertSigningProfile,
+  clearProjectSigning,
+  getProjectSigning,
+  parseProjectSigningInput,
+  upsertProjectSigning,
 } from '../services/signing'
 import {
   getRecentProjects,
@@ -101,11 +101,11 @@ const handlers: Record<InvokeMethod, Handler> = {
   importJdk: (homePath) => importJdk(String(homePath ?? '')),
   removeJdk: (id) => removeJdk(String(id ?? '')),
   setDefaultJdk: (id) => setDefaultJdk(id == null || id === '' ? null : String(id)),
-  listSigningProfiles: () => listSigningProfiles(),
-  upsertSigningProfile: (input) => upsertSigningProfile(parseSigningProfileInput(input)),
-  deleteSigningProfile: (id) => deleteSigningProfile(String(id ?? '')),
-  buildSigningInjectArgs: (profileId) =>
-    buildSigningInjectArgs(profileId == null || profileId === '' ? null : String(profileId)),
+  getProjectSigning: (projectPath) => getProjectSigning(String(projectPath ?? '')),
+  upsertProjectSigning: (projectPath, input) =>
+    upsertProjectSigning(String(projectPath ?? ''), parseProjectSigningInput(input)),
+  clearProjectSigning: (projectPath) => clearProjectSigning(String(projectPath ?? '')),
+  buildSigningInjectArgs: (projectPath) => buildSigningInjectArgs(String(projectPath ?? '')),
   resolveBuildEnv: () => notImplemented('resolveBuildEnv'),
   startBuild: () => notImplemented('startBuild'),
   cancelBuild: () => notImplemented('cancelBuild'),
