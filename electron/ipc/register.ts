@@ -9,6 +9,7 @@ import {
   upsertRecentProject,
   validateProject,
 } from '../services/project'
+import { discoverVariants, isBuildKind, previewTaskName } from '../services/variants'
 import {
   getJdkState,
   getRecentProjects,
@@ -60,8 +61,16 @@ const handlers: Record<InvokeMethod, Handler> = {
     return ok(undefined)
   },
   listModules: (projectPath) => listModules(String(projectPath ?? '')),
-  discoverVariants: () => notImplemented('discoverVariants'),
-  previewTaskName: () => notImplemented('previewTaskName'),
+  discoverVariants: (projectPath, module) => discoverVariants(String(projectPath ?? ''), String(module ?? '')),
+  previewTaskName: (req) => {
+    const body = (req ?? {}) as Record<string, unknown>
+    return previewTaskName({
+      module: String(body.module ?? ''),
+      kind: isBuildKind(body.kind) ? body.kind : 'assemble',
+      flavorPart: String(body.flavorPart ?? ''),
+      buildType: String(body.buildType ?? 'Release'),
+    })
+  },
   listJdks: () => ok(getJdkState()),
   importJdk: () => notImplemented('importJdk'),
   removeJdk: () => notImplemented('removeJdk'),

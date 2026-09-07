@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import ModuleSelect from '../components/ModuleSelect'
 import ProjectPicker from '../components/ProjectPicker'
-import type { ProjectValidation } from '../shared/types'
+import VariantConfig from '../components/VariantConfig'
+import type { BuildKind, ProjectValidation, VariantDiscovery } from '../shared/types'
 
 function packforgeApi() {
   return window.packforge
@@ -22,17 +23,60 @@ function PlaceholderCard({
   )
 }
 
+function pickDefaultBuildType(types: string[]): string {
+  return types.find((item) => item === 'Release') ?? types[0] ?? 'Release'
+}
+
+function pickDefaultFlavors(discovery: VariantDiscovery): Record<string, string> {
+  const next: Record<string, string> = {}
+  for (const dim of discovery.flavorDimensions) {
+    next[dim.name] = dim.flavors[0] ?? ''
+  }
+  return next
+}
+
 export default function WorkbenchPage() {
   const [project, setProject] = useState<ProjectValidation | null>(null)
   const [modules, setModules] = useState<string[]>([])
   const [moduleName, setModuleName] = useState('app')
   const [parseWarning, setParseWarning] = useState<string | undefined>()
+  const [discovery, setDiscovery] = useState<VariantDiscovery | null>(null)
+  const [kind, setKind] = useState<BuildKind>('assemble')
+  const [buildType, setBuildType] = useState('Release')
+  const [flavorByDimension, setFlavorByDimension] = useState<Record<string, string>>({})
+  const [variantLoading, setVariantLoading] = useState(false)
+  const [variantError, setVariantError] = useState<string | undefined>()
+
+  const refreshVariants = useCallback(async (projectPath: string, module: string) => {
+    const api = packforgeApi()
+    if (!api) {
+      setVariantError('请在桌面应用内刷新变体')
+      return
+    }
+    setVariantLoading(true)
+    setVariantError(undefined)
+    try {
+      const result = await api.discoverVariants(projectPath, module)
+      if (!result.ok) {
+        setDiscovery(null)
+        setVariantError(`${result.error.code}：${result.error.message}`)
+        return
+      }
+      setDiscovery(result.data)
+      setBuildType(pickDefaultBuildType(result.data.buildTypes))
+      setFlavorByDimension(pickDefaultFlavors(result.data))
+    } finally {
+      setVariantLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!project) {
       setModules([])
       setModuleName('app')
       setParseWarning(undefined)
+      setDiscovery(null)
+      setVariantError(undefined)
       return
     }
     const api = packforgeApi()
@@ -60,6 +104,11 @@ export default function WorkbenchPage() {
     }
   }, [project])
 
+  useEffect(() => {
+    if (!project || !moduleName.trim()) return
+    void refreshVariants(project.path, moduleName)
+  }, [project, moduleName, refreshVariants])
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_280px] gap-3">
@@ -68,18 +117,37 @@ export default function WorkbenchPage() {
           <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
             <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
             <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
-              先选择模块。产物类型、flavor、buildType 将在 F07 组合任务名。
+              选择模块、产物类型与变体，预览将执行的 Gradle 任务名。
             </p>
             <div className="mt-3">
               {project ? (
-                <ModuleSelect
-                  modules={modules}
-                  value={moduleName}
-                  parseWarning={parseWarning}
-                  onChange={setModuleName}
-                />
+                <>
+                  <ModuleSelect
+                    modules={modules}
+                    value={moduleName}
+                    parseWarning={parseWarning}
+                    onChange={setModuleName}
+                  />
+                  <VariantConfig
+                    module={moduleName}
+                    discovery={discovery}
+                    kind={kind}
+                    buildType={buildType}
+                    flavorByDimension={flavorByDimension}
+                    loading={variantLoading}
+                    error={variantError}
+                    onKindChange={setKind}
+                    onBuildTypeChange={setBuildType}
+                    onFlavorChange={(dimension, flavor) => {
+                      setFlavorByDimension((current) => ({ ...current, [dimension]: flavor }))
+                    }}
+                    onRefresh={() => {
+                      void refreshVariants(project.path, moduleName)
+                    }}
+                  />
+                </>
               ) : (
-                <p className="text-xs text-[var(--text-muted)]">打开工程后将列出 include 模块</p>
+                <p className="text-xs text-[var(--text-muted)]">打开工程后将列出模块与变体</p>
               )}
             </div>
           </section>

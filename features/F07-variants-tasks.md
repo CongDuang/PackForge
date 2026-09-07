@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F07 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | F06 |
 | PRD | FR-03、§9 |
 | 触发语 | `开始执行 F07` |
@@ -72,10 +72,10 @@ previewTaskName(req: Pick<BuildRequest,'module'|'kind'|'flavorPart'|'buildType'>
 
 ## 5. 验收清单
 
-- [ ] `buildGradleTaskName` 单测覆盖 §9.2 全部示例
-- [ ] 动态或静态至少一条路径可用
-- [ ] 回退时 UI 有明确标注
-- [ ] 无 flavor 时生成 `assembleRelease` / `bundleRelease` 等形式
+- [x] `buildGradleTaskName` 单测覆盖 §9.2 全部示例
+- [x] 动态或静态至少一条路径可用
+- [x] 回退时 UI 有明确标注
+- [x] 无 flavor 时生成 `assembleRelease` / `bundleRelease` 等形式
 
 ## 6. 完成动作
 
