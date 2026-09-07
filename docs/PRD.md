@@ -4,7 +4,7 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.1 |
+| 文档版本 | v1.2 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
@@ -15,6 +15,7 @@
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.2 | 2026-09-07 | 产物分享取消拖出；改为复制到文件夹 / 路径 / 文件剪贴板；开发任务见 `features/` |
 | v1.1 | 2026-09-07 | 移除 JDK 在线下载/缓存能力；JDK 仅支持导入本机已安装路径 |
 | v1.0 | 2026-09-07 | 首版：背景、技术栈锁定、完整功能与验收标准 |
 
@@ -23,6 +24,8 @@
 ## 1. 文档信息与范围
 
 本文档定义 **匠包（PackForge）** 的产品目标、技术栈、功能需求、交互规则、数据模型、安全边界与里程碑。实现时以本文为准；超出「非目标」的能力不得挤入 MVP。
+
+**开发任务拆分：** 从脚手架到可安装发布的顺序任务见仓库 [features/README.md](../features/README.md)（F01–F14）。会话中提及「开始执行 Fxx」即执行对应任务。
 
 **一句话定位：** 面向 Android 工程师的**本地 Gradle 打包工作台**——指定工程后，用项目自带 `gradlew` / `gradlew.bat` 打 APK / AAB，不经过 Android Studio IDE，避免 IDE 层同步/上传签名与未知遥测。
 
@@ -55,7 +58,7 @@
 
 ### 2.3 机会
 
-做一个**纯本地、零遥测**的桌面工具：选项目 → 选 JDK / 签名 / 变体 → 一键 Gradle 打包 → 产物列表支持复制与拖出分享。全程不依赖 Android Studio GUI。
+做一个**纯本地、零遥测**的桌面工具：选项目 → 选 JDK / 签名 / 变体 → 一键 Gradle 打包 → 产物列表支持复制到文件夹 / 路径 / 文件剪贴板。全程不依赖 Android Studio GUI。
 
 ---
 
@@ -67,7 +70,7 @@
 2. 导入并管理本机已安装的多个 JDK，打包时可选 `JAVA_HOME`（不提供在线下载）。
 3. 管理签名档案（keystore、密码、别名），打包时注入签名且**不修改**工程 `build.gradle`。
 4. 读取并展示 `buildType` / `productFlavor`（及维度组合），拼装 `assembleXxx` / `bundleXxx` 任务。
-5. 打包结束后汇总产物（APK、AAB、`mapping.txt` 等），支持单选/多选复制到文件夹、写入系统文件剪贴板、拖出到访达/资源管理器/IM。
+5. 打包结束后汇总产物（APK、AAB、`mapping.txt` 等），支持单选/多选复制到文件夹、复制路径、写入系统文件剪贴板（便于粘贴到访达/资源管理器/部分 IM）。**不做**从列表拖出到外部应用。
 6. 同一套产品覆盖 macOS 与 Windows。
 7. 品牌与视觉按「本地工坊 / 不上云」vibe 设计（见第 6 章）。
 
@@ -100,7 +103,7 @@
 | US-2 | 作为开发者，我选择 JDK 17/21 再打包，这样不同项目不会互相污染环境 | P0 |
 | US-3 | 作为开发者，我选签名档案后直接打 release，且密码不写进工程文件 | P0 |
 | US-4 | 作为开发者，我勾选 flavor=`Prod`、buildType=`Release`、产物类型=`AAB`，一键生成 `bundleProdRelease` | P0 |
-| US-5 | 作为开发者，打包完成后我多选 APK + mapping，复制到共享盘或拖到微信发给同事 | P0 |
+| US-5 | 作为开发者，打包完成后我多选 APK + mapping，复制到共享盘或通过文件剪贴板粘贴发给同事 | P0 |
 | US-6 | 作为开发者，我在多模块工程里选择正确的 `app` 模块再打包 | P0 |
 | US-7 | 作为开发者，我把本机已安装的 JDK 17/21 导入列表并在打包前切换 | P0 |
 
@@ -110,7 +113,7 @@
 打开匠包 → 选择/最近打开项目 → 校验 Wrapper + SDK
   →（可选）刷新变体列表 → 选择模块 / Flavor / BuildType / APK|AAB
   → 选择 JDK + 签名档案 → 开始打包 → 实时看日志
-  → 成功 → 产物面板勾选 → 复制到文件夹 / 剪贴板 / 拖出到 IM
+  → 成功 → 产物面板勾选 → 复制到文件夹 / 复制路径 / 文件剪贴板
 ```
 
 ---
@@ -121,7 +124,7 @@
 
 | 层 | 选型 | 用途 |
 |----|------|------|
-| 桌面壳 | **Electron 33** | 无沙箱限制地选目录、拉起 Gradle、写系统文件剪贴板、把产物拖出到 Finder / 资源管理器 / 微信等 IM |
+| 桌面壳 | **Electron 33** | 无沙箱限制地选目录、拉起 Gradle、写系统文件剪贴板、复制产物到目标文件夹 |
 | 渲染层 | **React 19 + TypeScript 5 + Vite** | 打包工作台 UI |
 | 样式 | **Tailwind CSS 4** | 「本地工坊 / 深色专业工具」风格 |
 | 状态 | **Zustand** | 项目、JDK、签名、打包任务、产物多选 |
@@ -135,9 +138,9 @@
 
 | 方案 | 否决理由 |
 |------|----------|
-| **Tauri 2** | 体积更小，但核心需求是「文件拖出 / 复制到 IM」。Tauri 拖放偏拖入；Windows 上 native drag 与 DOM 互斥；文件剪贴板生态不如 Electron 成熟 |
-| **Compose Multiplatform** | 产品需管理用户 JDK，再捆绑 JRE 别扭；JVM 写系统文件剪贴板并拖到微信体验差 |
-| **Flutter Desktop** | 拖出文件到 IM、长日志流式终端的桌面端生态弱于 Electron |
+| **Tauri 2** | 体积更小，但系统文件剪贴板与桌面工程生态成熟度不如 Electron；MVP 优先交付速度与资料完整度 |
+| **Compose Multiplatform** | 产品需管理用户 JDK，再捆绑 JRE 别扭；文件剪贴板与长日志终端体验弱于 Electron |
+| **Flutter Desktop** | 长日志流式终端、文件剪贴板的桌面端生态弱于 Electron |
 
 ### 5.2 进程架构
 
@@ -146,7 +149,7 @@
 │  Renderer (React)                                        │
 │  - 项目 / 变体 / JDK / 签名 / 产物 UI                     │
 │  - Zustand 状态                                          │
-│  - 订阅构建日志流、触发复制/拖出                           │
+│  - 订阅构建日志流、触发复制到文件夹/剪贴板                  │
 └──────────────────────▲──────────────────────────────────┘
                        │ contextBridge IPC（preload）
 ┌──────────────────────┴──────────────────────────────────┐
@@ -155,7 +158,7 @@
 │  - spawn gradlew / gradlew.bat                           │
 │  - JAVA_HOME / ANDROID_HOME 环境组装                      │
 │  - electron-store + keytar                               │
-│  - 剪贴板写文件、drag start、复制到目标目录                 │
+│  - 剪贴板写文件、复制到目标目录                             │
 │  - 本机 JDK 路径校验与登记                                 │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -171,7 +174,7 @@ flowchart LR
   Gradlew --> Log[流式日志回传 UI]
   Gradlew --> Scan[扫描 build/outputs]
   Scan --> Artifacts[产物列表]
-  Artifacts --> Share[复制 / 剪贴板 / 拖出]
+  Artifacts --> Share[复制到文件夹 / 路径 / 文件剪贴板]
 ```
 
 ### 5.4 推荐仓库结构（实现阶段参考）
@@ -401,8 +404,9 @@ android-packing-tools/
 
 - 列出 APK、AAB、`mapping.txt`（及可选元数据）。
 - 单文件复制、多选复制到目标文件夹。
+- 复制绝对路径到文本剪贴板。
 - 写入系统**文件**剪贴板，便于粘贴到访达/资源管理器/部分 IM。
-- 从列表拖出文件到外部应用。
+- **不做**从列表拖出到外部应用。
 
 ### FR-08 Android SDK 检测（P0）
 
@@ -514,9 +518,8 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 |------|------|
 | 复制路径 | 将绝对路径字符串写入文本剪贴板 |
 | 在访达/资源管理器中显示 | `shell.showItemInFolder` |
-| 复制文件到文件夹 | 选目标目录，将勾选文件 `copyFile` 过去；重名时追加时间戳或询问覆盖 |
+| 复制文件到文件夹 | 选目标目录，将勾选文件 `copyFile` 过去；重名时追加时间戳 |
 | 复制文件到剪贴板 | 主进程写入系统**文件**剪贴板（macOS/Windows 各实现），便于在支持文件粘贴的应用中粘贴 |
-| 拖出 | 从列表项 `dragStart` 带上文件路径，支持拖到桌面、文件夹、微信等 |
 | 全选 / 反选 | 多选辅助 |
 
 ### 10.4 AC
@@ -524,7 +527,7 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 - 成功 `assemble` 后至少能看到对应 APK；成功 `bundle` 后至少能看到对应 AAB。
 - minify 开启的 release 构建能看到 `mapping.txt`（若 Gradle 已输出）。
 - 多选 2 个以上文件复制到新文件夹后，目标目录文件齐全且校验大小一致。
-- 拖出至少一个文件到系统文件夹成功（双平台均测）。
+- 文件剪贴板在目标 OS 可用（若平台受限须在 UI 标明，但复制到文件夹必须可用）。
 
 ---
 
@@ -578,7 +581,6 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 | 路径 | POSIX；注意空格引号 | 反斜杠；盘符；空格 |
 | 钥匙串 | Keychain via keytar | Credential Manager via keytar |
 | 文件剪贴板 | NSPasteboard 文件 URL | CF_HDROP / PowerShell/Native |
-| 拖出 | Electron drag | Electron drag（重点回归微信/企微） |
 | 杀进程树 | `SIGTERM`/`SIGKILL` 组 | 杀子进程树，避免残留 `java` |
 | 安装形态 | dmg/zip | nsis |
 
@@ -620,8 +622,9 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 ### MVP（v1.0）
 
 - FR-01～FR-04（含导入本机 JDK，无下载）、FR-05～FR-10（双平台可安装）
-- 产物列表 + 复制到文件夹 + 路径复制 + 拖出 + 文件剪贴板（至少一平台完善，另一平台对等实现）
+- 产物列表 + 复制到文件夹 + 路径复制 + 文件剪贴板（至少一平台完善，另一平台对等实现；**无拖出**）
 - 品牌深色 UI 初版 + 应用图标
+- 开发任务拆分见仓库 `features/`（F01–F14）
 
 ### v1.1
 
@@ -649,10 +652,11 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 - [ ] 配置签名档案，release 包使用 injected signing，工程文件无新增密码明文
 - [ ] 成功打出 APK 与 AAB 各至少一次（可用演示工程）
 - [ ] 产物区显示包体与 mapping（若有），支持单选/多选复制到文件夹
-- [ ] 支持拖出文件到系统文件夹；文件剪贴板在目标 OS 可用
+- [ ] 支持文件剪贴板（目标 OS）；复制到文件夹与复制路径可用（**无拖出要求**）
 - [ ] 构建日志流式显示；可取消构建
 - [ ] 缺 Wrapper / 缺 SDK / 构建失败时错误码与提示符合第 15 章
 - [ ] 日志与命令预览中密码已脱敏
+- [ ] 开发任务 F01–F14 全部完成后安装包可启动（见 `features/README.md`）
 
 ---
 
@@ -677,9 +681,10 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 4. **密码：** keytar；UI/日志打码。  
 5. **JDK：** 仅导入本机路径并登记；不下载、不缓存安装包；MVP 强制从已登记列表选择；系统 JDK 仅作警告级回退可在设置中开启（默认关）。  
 6. **SDK：** 只读检测，设置可覆盖。  
-7. **产物分享：** 复制到文件夹 + 文件剪贴板 + 拖出，三者都做。  
+7. **产物分享：** 复制到文件夹 + 复制路径 + 文件剪贴板；**不做拖出**。  
 8. **隐私：** 零遥测；MVP 默认无出站网络。  
 9. **品牌：** 匠包 PackForge；深色工坊 + 密封箱/盾牌 + Android 绿。
+10. **开发拆分：** 实现按 `features/F01`…`F14` 顺序执行；完成后自动 commit-and-push。
 
 ---
 
@@ -690,7 +695,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 | 1 | 指定项目路径，自动识别 Mac/Windows gradlew | §8 FR-01，§13 |
 | 2 | 添加/管理本机 JDK，打包可选（不做在线下载） | §8 FR-04，§3.2，§11 |
 | 3 | 自定义签名文件与密码别名 | §8 FR-05，§12 |
-| 4 | 产物带出 + 单选/多选复制到文件夹或 IM | §8 FR-07，§10 |
+| 4 | 产物带出 + 单选/多选复制到文件夹或剪贴板（无拖出） | §8 FR-07，§10，features/F12 |
 | 5 | 读取 buildType/flavor 并组合 assemble/bundle 命令 | §8 FR-03，§9 |
 | 6 | 应用名与图标按背景 vibe 生成 | §6 |
 | 7 | Mac / Windows 双平台 | §5，§8 FR-10，§13 |

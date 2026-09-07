@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | 平台 | macOS、Windows |
-| 状态 | 需求已确认，应用开发中 |
+| 状态 | 需求已确认，按 features 任务开发中 |
 | 仓库 | [CongDuang/PackForge](https://github.com/CongDuang/PackForge) |
 
 ## 能做什么
@@ -16,7 +16,7 @@
 - 导入本机已安装 JDK，打包时选择 `JAVA_HOME`（**不提供**在线下载）
 - 管理签名档案（keystore / 别名 / 密码），经 AGP injected signing 注入，**不改**工程 `build.gradle`
 - 读取 `buildType` / `flavor`，组合如 `bundleProdRelease`、`assembleDevDebug`
-- 汇总 APK、AAB、`mapping.txt` 等产物，支持单选/多选复制到文件夹、文件剪贴板与拖出分享
+- 汇总 APK、AAB、`mapping.txt` 等产物，支持单选/多选**复制到文件夹**、**复制路径**、**文件剪贴板**（不做拖出）
 
 ## 技术栈（锁定）
 
@@ -24,17 +24,21 @@ Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；配置用 `elect
 
 ## 文档
 
-完整产品需求见 [docs/PRD.md](docs/PRD.md)。实现与 PRD 冲突时，先更新 PRD 再改代码。
+- 产品需求：[docs/PRD.md](docs/PRD.md)
+- **开发任务（顺序执行）：** [features/README.md](features/README.md)（F01–F14）
+
+实现与 PRD 冲突时，先更新 PRD 再改代码。会话中说「开始执行 Fxx」即按对应任务说明书开发，完成后自动 commit-and-push。
 
 ## 开发
 
-应用脚手架尚未落地。后续将在本仓库提供：
+应用脚手架见任务 **F01**。脚手架落地后：
 
 ```bash
-# 示意（待脚手架就绪后补充真实命令）
 npm install
 npm run dev
 ```
+
+打包发布见任务 **F14**（`npm run dist` 等，以落地后 README 为准）。
 
 ## 隐私
 
