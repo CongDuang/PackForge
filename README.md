@@ -20,7 +20,7 @@
 
 ## 技术栈（锁定）
 
-Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；配置用 `electron-store`，签名密码进系统钥匙串（`keytar`）；安装包用 `electron-builder`。
+Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；包管理器 **pnpm**；配置用 `electron-store`，签名密码进系统钥匙串（`keytar`）；安装包用 `electron-builder`。
 
 ## 文档
 
@@ -31,16 +31,16 @@ Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；配置用 `elect
 
 ## 开发
 
-包管理器：**npm**。脚手架已落地（F01）。
+包管理器：**pnpm**（勿用 npm / yarn）。脚手架已落地（F01）。
 
 ```bash
-npm install
-npm run dev        # 启动 Vite + Electron
-npm run typecheck  # TypeScript 严格检查
-npm run build      # 编译渲染进程与主进程
+pnpm install
+pnpm dev        # 启动 Vite + Electron
+pnpm typecheck  # TypeScript 严格检查
+pnpm build      # 编译渲染进程与主进程
 ```
 
-打包发布见任务 **F14**（`npm run dist` 等，以落地后 README 为准）。
+打包发布见任务 **F14**（`pnpm dist` 等，以落地后 README 为准）。
 
 ## 隐私
 

@@ -32,7 +32,7 @@
 - `appId`：建议 `com.packforge.app`（冻结后勿随意改）
 - `productName`：`PackForge`（界面中文名仍为匠包）
 
-### 3.2 npm scripts
+### 3.2 package.json scripts
 
 | script | 行为 |
 |--------|------|
@@ -47,14 +47,14 @@
 ## 4. 实现规格
 
 1. `electron-builder.yml` 或 `package.json.build` 字段齐全。
-2. 在本机执行 `npm run dist`（或平台 script），产出到 `release/` 或 `dist/`（gitignore 已忽略）。
+2. 在本机执行 `pnpm dist`（或平台 script），产出到 `release/` 或 `dist/`（gitignore 已忽略）。
 3. 安装/打开产物，确认标题、关于页、主路径入口正常。
 4. README：
-   - 开发：`npm install` / `npm run dev`
-   - 打包：`npm run dist`
+   - 开发：`pnpm install` / `pnpm dev`
+   - 打包：`pnpm dist`
    - 指向 `features/README.md` 与 `docs/PRD.md`
 5. 将 [features/README.md](README.md)「可发布」勾选为 `[x]`；F01–F14 状态均为 `done`（本任务改 F14，并核对索引勾选）。
-6. **Windows 包在 mac 上：** 配置必须提交；验收写「配置已就绪，二进制需在 Windows CI/机器执行 `npm run dist:win`」。不得因此卡住 F14 在 Mac 上的完成定义。
+6. **Windows 包在 mac 上：** 配置必须提交；验收写「配置已就绪，二进制需在 Windows CI/机器执行 `pnpm dist:win`」。不得因此卡住 F14 在 Mac 上的完成定义。
 
 ## 5. 验收清单
 

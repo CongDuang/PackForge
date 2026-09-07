@@ -14,6 +14,7 @@ alwaysApply: true
 ## 技术栈（锁定）
 
 - Electron + React + TypeScript + Vite + Tailwind + Zustand
+- 包管理器：**pnpm**（勿用 npm / yarn）
 - 配置：`electron-store`；签名密码：`keytar`
 - 签名：AGP `-Pandroid.injected.signing.*`，不改工程 `build.gradle(.kts)`
 - 打包分发：`electron-builder`（macOS / Windows）

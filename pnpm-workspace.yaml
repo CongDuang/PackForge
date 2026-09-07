@@ -1,0 +1,10 @@
+# 单包仓库；pnpm 11+ 项目配置写在本文件（.npmrc 仅保留 auth/registry）
+shamefullyHoist: true
+autoInstallPeers: true
+confirmModulesPurge: false
+onlyBuiltDependencies:
+  - electron
+  - esbuild
+allowBuilds:
+  electron: true
+  esbuild: true

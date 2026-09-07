@@ -126,8 +126,8 @@ ArtifactItem {
 ## 6. 自检
 
 ```bash
-npm run typecheck
-npm run dev  # 控制台可调用 window.packforge.getSettings()（stub 可返回默认）
+pnpm typecheck
+pnpm dev  # 控制台可调用 window.packforge.getSettings()（stub 可返回默认）
 ```
 
 ## 7. 验收清单

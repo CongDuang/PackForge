@@ -66,8 +66,8 @@ type ProjectValidation = {
 ## 6. 自检
 
 ```bash
-npm run test   # 或 vitest 针对 project 服务
-npm run dev    # 选真实/伪造工程目录，错误码与成功路径符合预期
+pnpm test   # 或 vitest 针对 project 服务
+pnpm dev    # 选真实/伪造工程目录，错误码与成功路径符合预期
 ```
 
 ## 7. 验收清单

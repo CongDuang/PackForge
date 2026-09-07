@@ -50,8 +50,8 @@ listModules(projectPath: string): Result<{ modules: string[]; defaultModule: str
 ## 6. 自检
 
 ```bash
-npm run test
-npm run dev  # 打开多模块工程，默认选中 app
+pnpm test
+pnpm dev  # 打开多模块工程，默认选中 app
 ```
 
 ## 7. 验收清单

@@ -5,7 +5,7 @@
 | 字段 | 内容 |
 |------|------|
 | 对应 PRD | v1.1（MVP：FR-01～FR-10） |
-| 技术栈 | Electron 33 + React 19 + TypeScript 5 + Vite + Tailwind 4 + Zustand |
+| 技术栈 | Electron 33 + React 19 + TypeScript 5 + Vite + Tailwind 4 + Zustand；包管理器 **pnpm** |
 | 远程 | `git@github.com:CongDuang/PackForge.git` |
 | 任务状态约定 | 各任务文件 frontmatter / 文首：`pending` → `in_progress` → `done` |
 
@@ -127,7 +127,7 @@ flowchart TD
 
 ## 7. 完成定义（全部 F01–F14 后）
 
-- [ ] `npm install && npm run dev` 可打开「匠包」
+- [ ] `pnpm install && pnpm dev` 可打开「匠包」
 - [ ] 主路径：选项目 → 选模块/变体 → 选 JDK →（可选）签名 → 打包 → 日志 → 复制产物
 - [ ] 缺 Wrapper / SDK / JDK / 构建失败时错误码与人话提示符合 PRD §15
 - [ ] 密码不进明文 store；日志与命令预览脱敏

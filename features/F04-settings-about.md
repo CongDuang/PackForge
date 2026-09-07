@@ -49,7 +49,7 @@
 ## 6. 自检
 
 ```bash
-npm run dev
+pnpm dev
 # 设置 SDK 路径 → 重启应用后仍在
 # 关于区可见隐私声明
 ```

@@ -10,7 +10,7 @@
 
 ## 1. 目标
 
-落地可运行的 Electron + Vite + React + TypeScript + Tailwind 工程，能 `npm install` 后 `npm run dev` 打开空白应用窗口。
+落地可运行的 Electron + Vite + React + TypeScript + Tailwind 工程，能 `pnpm install` 后 `pnpm dev` 打开空白应用窗口。
 
 ## 2. 非目标
 
@@ -39,7 +39,7 @@ android-packing-tools/
   electron.vite 或等效主进程编译配置
 ```
 
-### 3.2 npm scripts（名称冻结）
+### 3.2 package.json scripts（名称冻结）
 
 | script | 行为 |
 |--------|------|
@@ -49,6 +49,7 @@ android-packing-tools/
 
 ### 3.3 技术版本（锁定）
 
+- 包管理器：**pnpm**（禁止默认使用 npm / yarn）
 - Electron **33.x**
 - React **19.x**
 - TypeScript **5.x**（`strict: true`）
@@ -57,37 +58,38 @@ android-packing-tools/
 
 ## 4. 实现规格
 
-1. 使用 npm（或 pnpm，二选一后写进 README；**默认 npm**）。
+1. 使用 **pnpm**；README 与脚本一律写 `pnpm`，不写 `npm`。
 2. 主进程：创建 `BrowserWindow`，`webPreferences.preload` 指向编译后的 preload；`contextIsolation: true`，`nodeIntegration: false`。
 3. 开发态：加载 Vite `http://localhost:<port>`；生产态：加载打包后的 `index.html`。
 4. 窗口标题暂可 `PackForge`（F02 再改成中文正式标题）。
 5. Tailwind 已接入，`index.css` 可写最小 `@import "tailwindcss"`。
-6. `.gitignore`：`node_modules/`、`dist/`、`out/`、`release/`、`.DS_Store`、日志等。
-7. 更新根 [README.md](../README.md)「开发」一节为真实命令：`npm install` / `npm run dev`。
+6. `.gitignore`：`node_modules/`、`dist/`、`out/`、`release/`、`package-lock.json`、`.DS_Store`、日志等。
+7. 更新根 [README.md](../README.md)「开发」一节为真实命令：`pnpm install` / `pnpm dev`。
+8. `pnpm-workspace.yaml` 中配置 `allowBuilds.electron/esbuild: true`（pnpm 11+ 需显式允许 postinstall）。
 
 ## 5. 文件清单
 
 | 操作 | 路径 |
 |------|------|
 | 新建 | `package.json`、Vite/TS/Tailwind 配置、`electron/main.ts`、`electron/preload.ts`、`src/*`、`index.html` |
-| 新建/更新 | `.gitignore` |
+| 新建/更新 | `.gitignore`、`.npmrc`（pnpm）、`pnpm-lock.yaml` |
 | 更新 | `README.md` 开发命令 |
 
 ## 6. 自检
 
 ```bash
-npm install
-npm run typecheck
-npm run dev   # 应弹出窗口，可见 React 占位文案如「匠包 PackForge」
+pnpm install
+pnpm typecheck
+pnpm dev   # 应弹出窗口，可见 React 占位文案如「匠包 PackForge」
 ```
 
 ## 7. 验收清单
 
-- [x] `npm run dev` 能打开 Electron 窗口且无白屏报错
+- [x] `pnpm dev` 能打开 Electron 窗口且无白屏报错
 - [x] `contextIsolation: true` 且渲染进程无直接 Node 集成
 - [x] TypeScript strict 通过 `typecheck`
 - [x] Tailwind 已配置（后续 F02 可直接用 utility class）
-- [x] README 开发命令可用
+- [x] README 开发命令可用（pnpm）
 
 ## 8. 完成动作
 

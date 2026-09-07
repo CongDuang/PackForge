@@ -66,7 +66,7 @@ android.injected.signing.store.type   # 可选，有 storeType 才加
 
 ## 4. 实现规格
 
-1. 依赖 `keytar`；注意 Electron 原生模块重建（`@electron/rebuild` 或 electron-builder 约定），在 README/本任务实现说明里写清 `npm run rebuild`（若需要则加 script）。
+1. 依赖 `keytar`；注意 Electron 原生模块重建（`@electron/rebuild` 或 electron-builder 约定），在 README/本任务实现说明里写清 `pnpm rebuild`（若需要则加 script）。
 2. 签名页：表单含「key 密码与 store 相同」开关。
 3. 命令预览组件：只展示 `previewArgs`；若提供「显示密钥」必须二次确认，且默认关闭。
 4. 单元测试：打码函数保证 password 不会出现在 preview 中。
