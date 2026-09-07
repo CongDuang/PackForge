@@ -7,6 +7,10 @@ import type { AppSettings } from '../shared/types'
 
 const SAVE_DEBOUNCE_MS = 400
 
+function packforgeApi() {
+  return window.packforge
+}
+
 export default function SettingsPage() {
   const [sdkPath, setSdkPath] = useState('')
   const [allowFallback, setAllowFallback] = useState(false)
@@ -17,7 +21,12 @@ export default function SettingsPage() {
   const pendingRef = useRef<Partial<AppSettings>>({})
 
   const persist = useCallback(async (partial: Partial<AppSettings>) => {
-    const result = await window.packforge.setSettings(partial)
+    const api = packforgeApi()
+    if (!api) {
+      setNotice({ kind: 'error', text: '设置仅在桌面应用内可用' })
+      return
+    }
+    const result = await api.setSettings(partial)
     if (!result.ok) {
       setNotice({ kind: 'error', text: result.error.message })
       return
@@ -53,11 +62,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     let cancelled = false
-    if (!window.packforge) {
+    const api = packforgeApi()
+    if (!api) {
       setLoadError('设置仅在桌面应用内可用')
       return
     }
-    void window.packforge.getSettings().then((result) => {
+    void api.getSettings().then((result) => {
       if (cancelled) return
       if (!result.ok) {
         setLoadError(result.error.message)
@@ -72,15 +82,21 @@ export default function SettingsPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current)
       const pending = pendingRef.current
       pendingRef.current = {}
-      if (Object.keys(pending).length > 0 && window.packforge) {
-        void window.packforge.setSettings(pending)
+      const apiOnLeave = packforgeApi()
+      if (Object.keys(pending).length > 0 && apiOnLeave) {
+        void apiOnLeave.setSettings(pending)
       }
     }
   }, [])
 
   async function browseSdk() {
     flushPending()
-    const picked = await window.packforge.pickDirectory()
+    const api = packforgeApi()
+    if (!api) {
+      setNotice({ kind: 'error', text: '设置仅在桌面应用内可用' })
+      return
+    }
+    const picked = await api.pickDirectory()
     if (!picked.ok) {
       setNotice({ kind: 'error', text: picked.error.message })
       return

@@ -17,11 +17,15 @@ function createWindow(): void {
     },
   })
 
+  win.webContents.on('preload-error', (_event, preloadPath, error) => {
+    console.error(`[preload-error] ${preloadPath}`, error)
+  })
+
   if (isDev) {
     const url = process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5173'
     void win.loadURL(url)
   } else {
-    void win.loadFile(path.join(__dirname, '../dist/index.html'))
+    void win.loadFile(path.join(__dirname, '../../dist/index.html'))
   }
 }
 
