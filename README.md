@@ -7,7 +7,7 @@
 | | |
 |---|---|
 | 平台 | macOS、Windows |
-| 状态 | 需求已确认，按 features 任务开发中 |
+| 状态 | MVP 可发布（F01–F14） |
 | 仓库 | [CongDuang/PackForge](https://github.com/CongDuang/PackForge) |
 
 ## 能做什么
@@ -31,19 +31,34 @@ Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；包管理器 **p
 
 ## 开发
 
-包管理器：**pnpm**（勿用 npm / yarn）。脚手架已落地（F01）。
+包管理器：**pnpm**（勿用 npm / yarn）。
 
 ```bash
 pnpm install
 pnpm rebuild    # 为当前 Electron 重建 keytar 原生模块（签名钥匙串）
 pnpm dev        # 启动 Vite + Electron
 pnpm typecheck  # TypeScript 严格检查
+pnpm test       # 单元测试
 pnpm build      # 编译渲染进程与主进程
 ```
 
 `keytar` 是原生模块，必须针对 Electron 的 Node ABI 重建。若保存签名时报钥匙串写入失败，先执行 `pnpm rebuild`。
 
-打包发布见任务 **F14**（`pnpm dist` 等，以落地后 README 为准）。
+本仓库用 `pnpm-workspace.yaml` 的 `allowBuilds` 允许 `electron` / `esbuild` / `keytar` 等安装脚本；`electron-winstaller` 默认关闭（Windows 安装器脚本，仅在需要时再打开）。
+
+## 打包发布
+
+配置见 [electron-builder.yml](electron-builder.yml)：`appId=com.packforge.app`，`productName=PackForge`（界面中文名仍为匠包）。图标在 `resources/icon.{png,icns,ico}`。
+
+```bash
+pnpm dist        # 当前 OS：先 build 再 electron-builder
+pnpm dist:mac    # macOS → release/*.dmg 与 *.zip（默认当前 arch；可用 --arm64 / --x64）
+pnpm dist:win    # Windows → NSIS x64（须在 Windows 机器或 CI 执行）
+```
+
+产物目录：`release/`（已 gitignore，勿提交大二进制）。
+
+**交叉编译说明：** 在 macOS 上完成 F14 验收时，Windows NSIS **配置已就绪**，二进制需在 Windows CI/机器执行 `pnpm dist:win`。不强制在 Mac 上交叉打出 Windows 安装包。
 
 ## 隐私
 
