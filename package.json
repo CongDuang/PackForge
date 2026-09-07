@@ -1,0 +1,34 @@
+{
+  "name": "packforge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "匠包 PackForge — 本地 Android Gradle 打包工作台",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build:renderer && npm run build:electron",
+    "build:renderer": "vite build",
+    "build:electron": "node scripts/build-electron.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "lightningcss": "^1.33.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "esbuild": "^0.24.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

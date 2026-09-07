@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-electron/
+out/
+release/
+.DS_Store
+*.log
+logs/
+.codegraph/
+.vite/
+*.local
+.env
+.env.*
+!.env.example

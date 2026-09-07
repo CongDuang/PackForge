@@ -31,11 +31,13 @@ Electron + React + TypeScript + Vite + Tailwind CSS + Zustand；配置用 `elect
 
 ## 开发
 
-应用脚手架见任务 **F01**。脚手架落地后：
+包管理器：**npm**。脚手架已落地（F01）。
 
 ```bash
 npm install
-npm run dev
+npm run dev        # 启动 Vite + Electron
+npm run typecheck  # TypeScript 严格检查
+npm run build      # 编译渲染进程与主进程
 ```
 
 打包发布见任务 **F14**（`npm run dist` 等，以落地后 README 为准）。

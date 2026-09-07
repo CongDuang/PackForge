@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F01 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | 无 |
 | PRD | §5 技术栈与架构 |
 | 触发语 | `开始执行 F01` |
@@ -83,11 +83,11 @@ npm run dev   # 应弹出窗口，可见 React 占位文案如「匠包 PackForg
 
 ## 7. 验收清单
 
-- [ ] `npm run dev` 能打开 Electron 窗口且无白屏报错
-- [ ] `contextIsolation: true` 且渲染进程无直接 Node 集成
-- [ ] TypeScript strict 通过 `typecheck`
-- [ ] Tailwind 已配置（后续 F02 可直接用 utility class）
-- [ ] README 开发命令可用
+- [x] `npm run dev` 能打开 Electron 窗口且无白屏报错
+- [x] `contextIsolation: true` 且渲染进程无直接 Node 集成
+- [x] TypeScript strict 通过 `typecheck`
+- [x] Tailwind 已配置（后续 F02 可直接用 utility class）
+- [x] README 开发命令可用
 
 ## 8. 完成动作
 
