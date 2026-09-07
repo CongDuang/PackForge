@@ -1,9 +1,53 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
+import type { PackforgeApi } from '../src/shared/api'
+import { EVENT_CHANNELS, INVOKE_METHODS, invokeChannel } from '../src/shared/channels'
+import type { Result } from '../src/shared/result'
 
-/**
- * F01 占位：后续 F03 在此暴露 window.packforge 白名单 API。
- * 保持 contextIsolation，不向渲染进程暴露 Node。
- */
-contextBridge.exposeInMainWorld('packforgeBootstrap', {
-  version: '0.1.0',
-})
+function invoke<T>(method: (typeof INVOKE_METHODS)[number], ...args: unknown[]): Promise<Result<T>> {
+  return ipcRenderer.invoke(invokeChannel(method), ...args) as Promise<Result<T>>
+}
+
+const api: PackforgeApi = {
+  getSettings: () => invoke('getSettings'),
+  setSettings: (partial) => invoke('setSettings', partial),
+  pickDirectory: () => invoke('pickDirectory'),
+  validateProject: (projectPath) => invoke('validateProject', projectPath),
+  listRecentProjects: () => invoke('listRecentProjects'),
+  openProject: (projectPath) => invoke('openProject', projectPath),
+  removeRecentProject: (id) => invoke('removeRecentProject', id),
+  pinRecentProject: (id, pinned) => invoke('pinRecentProject', id, pinned),
+  listModules: (projectPath) => invoke('listModules', projectPath),
+  discoverVariants: (projectPath, module) => invoke('discoverVariants', projectPath, module),
+  previewTaskName: (req) => invoke('previewTaskName', req),
+  listJdks: () => invoke('listJdks'),
+  importJdk: (homePath) => invoke('importJdk', homePath),
+  removeJdk: (id) => invoke('removeJdk', id),
+  setDefaultJdk: (id) => invoke('setDefaultJdk', id),
+  listSigningProfiles: () => invoke('listSigningProfiles'),
+  upsertSigningProfile: (input) => invoke('upsertSigningProfile', input),
+  deleteSigningProfile: (id) => invoke('deleteSigningProfile', id),
+  resolveBuildEnv: (input) => invoke('resolveBuildEnv', input),
+  startBuild: (request) => invoke('startBuild', request),
+  cancelBuild: (buildId) => invoke('cancelBuild', buildId),
+  onBuildLog: (cb) => {
+    const listener = (_event: unknown, payload: Parameters<typeof cb>[0]) => cb(payload)
+    ipcRenderer.on(EVENT_CHANNELS.buildLog, listener)
+    return () => {
+      ipcRenderer.removeListener(EVENT_CHANNELS.buildLog, listener)
+    }
+  },
+  onBuildStatus: (cb) => {
+    const listener = (_event: unknown, payload: Parameters<typeof cb>[0]) => cb(payload)
+    ipcRenderer.on(EVENT_CHANNELS.buildStatus, listener)
+    return () => {
+      ipcRenderer.removeListener(EVENT_CHANNELS.buildStatus, listener)
+    }
+  },
+  scanArtifacts: (input) => invoke('scanArtifacts', input),
+  copyArtifactsToFolder: (paths, targetDir) => invoke('copyArtifactsToFolder', paths, targetDir),
+  copyPathsToClipboard: (paths) => invoke('copyPathsToClipboard', paths),
+  writeFilesToClipboard: (paths) => invoke('writeFilesToClipboard', paths),
+  showItemInFolder: (path) => invoke('showItemInFolder', path),
+}
+
+contextBridge.exposeInMainWorld('packforge', api)

@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F03 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | F02 |
 | PRD | §11 数据模型、§12 安全、§15 错误码 |
 | 触发语 | `开始执行 F03` |
@@ -132,11 +132,11 @@ pnpm dev  # 控制台可调用 window.packforge.getSettings()（stub 可返回�
 
 ## 7. 验收清单
 
-- [ ] 共享类型与错误码齐全且与 PRD 一致
-- [ ] store schema 默认值正确
-- [ ] preload 白名单已暴露；渲染进程无法 `require('fs')`
-- [ ] Result / channel 命名约定已文档化并在代码中统一
-- [ ] 无业务功能误实现
+- [x] 共享类型与错误码齐全且与 PRD 一致
+- [x] store schema 默认值正确
+- [x] preload 白名单已暴露；渲染进程无法 `require('fs')`
+- [x] Result / channel 命名约定已文档化并在代码中统一
+- [x] 无业务功能误实现
 
 ## 8. 完成动作
 

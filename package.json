@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "匠包 PackForge — 本地 Android Gradle 打包工作台",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "pnpm run build:renderer && pnpm run build:electron",
     "build:renderer": "vite build",
     "build:electron": "node scripts/build-electron.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
+    "test": "node --experimental-strip-types --test src/shared/errors.test.ts"
   },
   "packageManager": "pnpm@11.21.0",
   "engines": {
@@ -17,6 +18,7 @@
     "pnpm": ">=9"
   },
   "dependencies": {
+    "electron-store": "^8.2.0",
     "lightningcss": "^1.33.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
+import { registerIpcHandlers } from './ipc/register'
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL) || !app.isPackaged
 
@@ -25,6 +26,7 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  registerIpcHandlers()
   createWindow()
 
   app.on('activate', () => {

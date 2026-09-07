@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 // Bundle only preload (sandboxed). Main is compiled by tsc to keep Electron requires intact.
 await build({
   entryPoints: [path.join(root, 'electron/preload.ts')],
-  outfile: path.join(root, 'dist-electron/preload.js'),
+  outfile: path.join(root, 'dist-electron/electron/preload.js'),
   bundle: true,
   platform: 'node',
   format: 'cjs',
