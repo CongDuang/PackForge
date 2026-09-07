@@ -2,9 +2,12 @@ import { capitalizeAgp } from './taskName.ts'
 import type { VariantDiscovery } from './types.ts'
 
 const TASK_NAME_RE = /^(assemble|bundle)([A-Z][\w]*)?$/
-const COMMON_BUILD_TYPES = new Set(['Debug', 'Release', 'Staging', 'Benchmark'])
+export const COMMON_BUILD_TYPES = new Set(['Debug', 'Release', 'Staging', 'Benchmark'])
 
-export function parseGradleTasksOutput(output: string): Omit<VariantDiscovery, 'source' | 'warning'> {
+export function parseGradleTasksOutput(
+  output: string,
+  knownBuildTypes: ReadonlySet<string> = COMMON_BUILD_TYPES,
+): Omit<VariantDiscovery, 'source' | 'warning'> {
   const assembleTasks: string[] = []
   const bundleTasks: string[] = []
   const buildTypeSet = new Set<string>()
@@ -19,7 +22,7 @@ export function parseGradleTasksOutput(output: string): Omit<VariantDiscovery, '
     if (kind === 'assemble') assembleTasks.push(token)
     else bundleTasks.push(token)
     if (!suffix) continue
-    const parsed = splitVariantSuffix(suffix)
+    const parsed = splitVariantSuffix(suffix, knownBuildTypes)
     if (!parsed) continue
     buildTypeSet.add(parsed.buildType)
     if (parsed.flavorPart) flavorPartSet.add(parsed.flavorPart)
@@ -35,16 +38,34 @@ export function parseGradleTasksOutput(output: string): Omit<VariantDiscovery, '
   }
 }
 
-/** 去掉 assemble/bundle 前缀后：末段为 buildType，前缀为 flavorPart。 */
-export function splitVariantSuffix(suffix: string): { flavorPart: string; buildType: string } | null {
+/**
+ * 去掉 assemble/bundle 前缀后：仅当末段是已知 buildType 时才拆分。
+ * assembleDev / assembleJar / assembleAndroidTest 等聚合或非变体任务返回 null。
+ */
+export function splitVariantSuffix(
+  suffix: string,
+  knownBuildTypes: ReadonlySet<string> = COMMON_BUILD_TYPES,
+): { flavorPart: string; buildType: string } | null {
   if (!suffix) return null
   const parts = suffix.replace(/([a-z])([A-Z])/g, '$1|$2').split('|')
   if (parts.length === 0) return null
   const last = parts[parts.length - 1] ?? ''
-  if (COMMON_BUILD_TYPES.has(last) || parts.length === 1) {
-    return { flavorPart: parts.slice(0, -1).join(''), buildType: last }
-  }
+  if (!knownBuildTypes.has(last)) return null
   return { flavorPart: parts.slice(0, -1).join(''), buildType: last }
+}
+
+/** 动态任务与脚本静态解析合并：buildTypes / 维度优先用脚本里的声明。 */
+export function mergeVariantDiscovery(
+  dynamic: Omit<VariantDiscovery, 'source' | 'warning'>,
+  staticParsed: Omit<VariantDiscovery, 'source' | 'warning'> | null,
+): Omit<VariantDiscovery, 'source' | 'warning'> {
+  return {
+    ...dynamic,
+    buildTypes: staticParsed?.buildTypes.length ? staticParsed.buildTypes : dynamic.buildTypes,
+    flavorDimensions: staticParsed?.flavorDimensions.length
+      ? staticParsed.flavorDimensions
+      : dynamic.flavorDimensions,
+  }
 }
 
 export function parseStaticBuildScript(source: string): Omit<VariantDiscovery, 'source' | 'warning'> | null {
@@ -69,21 +90,59 @@ export function parseStaticBuildScript(source: string): Omit<VariantDiscovery, '
 function extractBuildTypes(source: string): string[] {
   const block = extractNamedBlock(source, 'buildTypes')
   if (!block) return []
+  return unique(
+    [...extractTopLevelCreatedNames(block), ...extractTopLevelBlockNames(block)].filter(
+      (name) => name && name !== 'initWith',
+    ),
+  )
+}
+
+function extractTopLevelCreatedNames(block: string): string[] {
   const names: string[] = []
-  const createRe = /\b(?:getByName|create|maybeCreate|register)\s*\(\s*["']([^"']+)["']/g
-  let match = createRe.exec(block)
-  while (match) {
-    names.push(match[1] ?? '')
-    match = createRe.exec(block)
+  let depth = 0
+  for (let i = 0; i < block.length; i += 1) {
+    const ch = block[i]
+    if (ch === '{') {
+      depth += 1
+      continue
+    }
+    if (ch === '}') {
+      depth -= 1
+      continue
+    }
+    if (depth !== 0) continue
+    const created = /^(?:getByName|create|maybeCreate|register)\s*\(\s*["']([^"']+)["']/.exec(block.slice(i))
+    if (!created?.[1]) continue
+    names.push(created[1])
+    i += created[0].length - 1
   }
-  const identRe = /(?:^|[{\n;])\s*(debug|release|staging|benchmark|[a-zA-Z][\w]*)\s*\{/g
-  match = identRe.exec(block)
-  while (match) {
-    const name = match[1] ?? ''
-    if (name && name !== 'initWith') names.push(name)
-    match = identRe.exec(block)
+  return names
+}
+
+/** 只取 buildTypes 块顶层 `name {`，忽略 release 内的 optimization { 等。 */
+function extractTopLevelBlockNames(block: string): string[] {
+  const names: string[] = []
+  let depth = 0
+  for (let i = 0; i < block.length; i += 1) {
+    const ch = block[i]
+    if (ch === '{') {
+      depth += 1
+      continue
+    }
+    if (ch === '}') {
+      depth -= 1
+      continue
+    }
+    if (depth !== 0) continue
+    const sliced = block.slice(i)
+    const ident = /^([a-zA-Z][\w]*)\s*\{/.exec(sliced)
+    if (!ident?.[1] || ['create', 'maybeCreate', 'register', 'getByName', 'initWith'].includes(ident[1])) {
+      continue
+    }
+    names.push(ident[1])
+    i += ident[0].length - 2
   }
-  return unique(names.filter(Boolean))
+  return names
 }
 
 function extractFlavorDimensions(source: string): string[] {

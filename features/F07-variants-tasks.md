@@ -52,8 +52,8 @@ previewTaskName(req: Pick<BuildRequest,'module'|'kind'|'flavorPart'|'buildType'>
 
 1. **动态：** 在 Wrapper 目录 spawn：  
    `wrapper :<module>:tasks --all`（可加超时，如 120s）  
-   解析输出行中匹配 `/^(assemble|bundle)([A-Z][\w]*)?$/` 的任务名，反推 buildTypes / flavors（启发式：去掉前缀后，末段为 Debug/Release/… 当作 buildType，前缀为 flavorPart）。
-2. **静态回退：** 读 `\<module\>/build.gradle(.kts)`，正则/简易解析 `buildTypes { debug release }`、`productFlavors`、`flavorDimensions`；UI 标注「回退解析，请核对」。
+   解析输出行中匹配 `/^(assemble|bundle)([A-Z][\w]*)?$/` 的任务名，反推 buildTypes / flavors（启发式：去掉前缀后，**仅当末段为脚本 `buildTypes` 或 Debug/Release/Staging/Benchmark** 才当作 buildType，前缀为 flavorPart）。`assembleDev` / `assembleJar` / `assembleAndroidTest` 等聚合或非变体任务忽略。
+2. **静态回退：** 读 `\<module\>/build.gradle(.kts)`，正则/简易解析 `buildTypes { debug release }`、`productFlavors`、`flavorDimensions`；UI 标注「回退解析，请核对」。动态成功时仍用脚本里的 `buildTypes` / 维度覆盖任务启发式。
 3. 皆失败 → `E_VARIANT_PARSE`。
 
 ### 3.4 UI

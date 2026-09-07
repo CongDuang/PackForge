@@ -2,7 +2,12 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { appError } from '../../src/shared/errors.ts'
-import { parseGradleTasksOutput, parseStaticBuildScript } from '../../src/shared/parseVariants.ts'
+import {
+  COMMON_BUILD_TYPES,
+  mergeVariantDiscovery,
+  parseGradleTasksOutput,
+  parseStaticBuildScript,
+} from '../../src/shared/parseVariants.ts'
 import { err, ok, type Result } from '../../src/shared/result.ts'
 import { buildGradleTaskName } from '../../src/shared/taskName.ts'
 import type { BuildKind, BuildRequest, VariantDiscovery } from '../../src/shared/types.ts'
@@ -40,12 +45,22 @@ export async function discoverVariants(projectPath: string, module: string): Pro
     return err(appError('E_VARIANT_PARSE', '请先选择模块'))
   }
 
-  const dynamic = await tryDiscoverFromTasks(validated.data.path, validated.data.wrapperCommand, moduleName)
-  if (dynamic) return ok(dynamic)
+  const staticParsed = tryDiscoverFromStatic(validated.data.path, moduleName)
+  const knownBuildTypes = new Set(COMMON_BUILD_TYPES)
+  for (const type of staticParsed?.buildTypes ?? []) knownBuildTypes.add(type)
 
-  const fallback = tryDiscoverFromStatic(validated.data.path, moduleName)
-  if (fallback) {
-    return ok({ ...fallback, source: 'static', warning: STATIC_WARNING })
+  const dynamic = await tryDiscoverFromTasks(
+    validated.data.path,
+    validated.data.wrapperCommand,
+    moduleName,
+    knownBuildTypes,
+  )
+  if (dynamic) {
+    return ok({ ...mergeVariantDiscovery(dynamic, staticParsed), source: 'tasks' })
+  }
+
+  if (staticParsed) {
+    return ok({ ...staticParsed, source: 'static', warning: STATIC_WARNING })
   }
 
   return err(appError('E_VARIANT_PARSE', '无法解析任务/变体', moduleName))
@@ -55,12 +70,13 @@ async function tryDiscoverFromTasks(
   projectPath: string,
   wrapperCommand: string,
   module: string,
-): Promise<VariantDiscovery | null> {
+  knownBuildTypes: ReadonlySet<string>,
+): Promise<Omit<VariantDiscovery, 'source' | 'warning'> | null> {
   try {
-    const output = await runWrapperTasks(projectPath, wrapperCommand, module)
-    const parsed = parseGradleTasksOutput(output)
+    const output = await runWrapperTasks(projectPath, wrapperCommand, module, knownBuildTypes)
+    const parsed = parseGradleTasksOutput(output, knownBuildTypes)
     if (parsed.buildTypes.length === 0) return null
-    return { ...parsed, source: 'tasks' }
+    return parsed
   } catch {
     return null
   }
@@ -81,7 +97,12 @@ function tryDiscoverFromStatic(projectPath: string, module: string): Omit<Varian
   return null
 }
 
-function runWrapperTasks(cwd: string, wrapperCommand: string, module: string): Promise<string> {
+function runWrapperTasks(
+  cwd: string,
+  wrapperCommand: string,
+  module: string,
+  knownBuildTypes: ReadonlySet<string>,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const args = [`:${module}:tasks`, '--all']
     const child = spawn(wrapperCommand, args, {
@@ -109,7 +130,7 @@ function runWrapperTasks(cwd: string, wrapperCommand: string, module: string): P
     })
     child.on('close', (code) => {
       clearTimeout(timer)
-      if (code === 0 || parseGradleTasksOutput(stdout).buildTypes.length > 0) {
+      if (code === 0 || parseGradleTasksOutput(stdout, knownBuildTypes).buildTypes.length > 0) {
         resolve(stdout)
         return
       }
