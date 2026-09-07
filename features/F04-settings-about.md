@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F04 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | F03 |
 | PRD | FR-09、§7.3 设置页 |
 | 触发语 | `开始执行 F04` |
@@ -56,10 +56,10 @@ pnpm dev
 
 ## 7. 验收清单
 
-- [ ] SDK 路径可浏览保存并持久化
-- [ ] 关于页含零遥测 / 不上云声明
-- [ ] 不改写任何 Android 工程文件
-- [ ] `allowSystemJdkFallback` 默认 false 且可切换
+- [x] SDK 路径可浏览保存并持久化
+- [x] 关于页含零遥测 / 不上云声明
+- [x] 不改写任何 Android 工程文件
+- [x] `allowSystemJdkFallback` 默认 false 且可切换
 
 ## 8. 完成动作
 

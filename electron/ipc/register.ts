@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { appError } from '../../src/shared/errors'
 import { INVOKE_METHODS, invokeChannel, type InvokeMethod } from '../../src/shared/channels'
 import { err, ok, type Result } from '../../src/shared/result'
@@ -10,6 +10,21 @@ import {
   setSettingsInStore,
 } from '../services/store'
 
+async function pickDirectory(): Promise<Result<string>> {
+  const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+  const options = {
+    title: '选择文件夹',
+    properties: ['openDirectory' as const],
+  }
+  const picked = win
+    ? await dialog.showOpenDialog(win, options)
+    : await dialog.showOpenDialog(options)
+  if (picked.canceled || picked.filePaths.length === 0) {
+    return ok('')
+  }
+  return ok(picked.filePaths[0])
+}
+
 function notImplemented(method: string): Result<never> {
   return err(appError('E_NOT_IMPLEMENTED', `尚未实现：${method}`, method))
 }
@@ -19,7 +34,7 @@ type Handler = (...args: unknown[]) => Promise<Result<unknown>> | Result<unknown
 const handlers: Record<InvokeMethod, Handler> = {
   getSettings: () => ok(getSettingsFromStore()),
   setSettings: (partial) => ok(setSettingsInStore((partial ?? {}) as Parameters<typeof setSettingsInStore>[0])),
-  pickDirectory: () => notImplemented('pickDirectory'),
+  pickDirectory,
   validateProject: () => notImplemented('validateProject'),
   listRecentProjects: () => ok(getRecentProjects()),
   openProject: () => notImplemented('openProject'),

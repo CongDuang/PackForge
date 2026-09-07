@@ -10,7 +10,7 @@
     "build:renderer": "vite build",
     "build:electron": "node scripts/build-electron.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
-    "test": "node --experimental-strip-types --test src/shared/errors.test.ts"
+    "test": "node --experimental-strip-types --test src/shared/*.test.ts"
   },
   "packageManager": "pnpm@11.21.0",
   "engines": {
