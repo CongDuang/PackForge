@@ -18,7 +18,9 @@ import {
   parseProjectSigningInput,
   upsertProjectSigning,
 } from '../services/signing'
+import { resolveBuildEnv } from '../services/env'
 import {
+  getJdkState,
   getRecentProjects,
   getSettingsFromStore,
   setRecentProjects,
@@ -106,7 +108,24 @@ const handlers: Record<InvokeMethod, Handler> = {
     upsertProjectSigning(String(projectPath ?? ''), parseProjectSigningInput(input)),
   clearProjectSigning: (projectPath) => clearProjectSigning(String(projectPath ?? '')),
   buildSigningInjectArgs: (projectPath) => buildSigningInjectArgs(String(projectPath ?? '')),
-  resolveBuildEnv: () => notImplemented('resolveBuildEnv'),
+  resolveBuildEnv: (input) => {
+    const body = (input ?? {}) as { projectPath?: unknown; jdkId?: unknown }
+    const jdkRaw = body.jdkId
+    const jdkId = jdkRaw == null || jdkRaw === '' ? null : String(jdkRaw)
+    const settings = getSettingsFromStore()
+    const jdkState = getJdkState()
+    return resolveBuildEnv(
+      {
+        projectPath: String(body.projectPath ?? ''),
+        jdkId,
+      },
+      {
+        settingsAndroidSdkPath: settings.androidSdkPath,
+        allowSystemJdkFallback: settings.allowSystemJdkFallback,
+        jdkInstalls: jdkState.installs,
+      },
+    )
+  },
   startBuild: () => notImplemented('startBuild'),
   cancelBuild: () => notImplemented('cancelBuild'),
   scanArtifacts: () => notImplemented('scanArtifacts'),

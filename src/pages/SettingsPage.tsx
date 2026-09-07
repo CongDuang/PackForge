@@ -17,6 +17,13 @@ export default function SettingsPage() {
   const [gradleArgs, setGradleArgs] = useState('')
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [envDiag, setEnvDiag] = useState<{
+    status: 'idle' | 'loading' | 'ok' | 'error'
+    androidHome?: string
+    javaHome?: string
+    lines: string[]
+    errorText?: string
+  }>({ status: 'idle', lines: [] })
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const pendingRef = useRef<Partial<AppSettings>>({})
 
@@ -60,6 +67,34 @@ export default function SettingsPage() {
     [persist],
   )
 
+  const refreshEnvDiag = useCallback(async () => {
+    const api = packforgeApi()
+    if (!api) {
+      setEnvDiag({ status: 'error', lines: [], errorText: '设置仅在桌面应用内可用' })
+      return
+    }
+    setEnvDiag((prev) => ({ ...prev, status: 'loading' }))
+    const [recent, jdks] = await Promise.all([api.listRecentProjects(), api.listJdks()])
+    const projectPath = recent.ok && recent.data[0]?.path ? recent.data[0].path : ''
+    const jdkId = jdks.ok ? jdks.data.defaultId : null
+    const result = await api.resolveBuildEnv({ projectPath, jdkId })
+    if (!result.ok) {
+      const detail = result.error.detail
+      setEnvDiag({
+        status: 'error',
+        lines: detail ? detail.split('；').filter(Boolean) : [],
+        errorText: `${result.error.code}：${result.error.message}`,
+      })
+      return
+    }
+    setEnvDiag({
+      status: 'ok',
+      androidHome: result.data.androidHome,
+      javaHome: result.data.javaHome,
+      lines: result.data.diagnosis,
+    })
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     const api = packforgeApi()
@@ -77,6 +112,7 @@ export default function SettingsPage() {
       setAllowFallback(result.data.allowSystemJdkFallback)
       setGradleArgs(result.data.advancedGradleArgs)
     })
+    void refreshEnvDiag()
     return () => {
       cancelled = true
       if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -87,7 +123,7 @@ export default function SettingsPage() {
         void apiOnLeave.setSettings(pending)
       }
     }
-  }, [])
+  }, [refreshEnvDiag])
 
   async function browseSdk() {
     flushPending()
@@ -104,12 +140,14 @@ export default function SettingsPage() {
     if (!picked.data) return
     setSdkPath(picked.data)
     await persist({ androidSdkPath: picked.data })
+    await refreshEnvDiag()
   }
 
   async function toggleFallback(next: boolean) {
     flushPending()
     setAllowFallback(next)
     await persist({ allowSystemJdkFallback: next })
+    await refreshEnvDiag()
   }
 
   return (
@@ -151,7 +189,10 @@ export default function SettingsPage() {
                 setSdkPath(value)
                 persistSoon({ androidSdkPath: value })
               }}
-              onBlur={flushPending}
+              onBlur={() => {
+                flushPending()
+                void refreshEnvDiag()
+              }}
             />
           </div>
           <Button className="shrink-0" onClick={() => void browseSdk()}>
@@ -165,6 +206,42 @@ export default function SettingsPage() {
           onChange={(next) => void toggleFallback(next)}
           hint="默认关闭。开启后，未导入 JDK 时可回退本机 JAVA_HOME。"
         />
+        <div className="space-y-2 rounded-md border border-[var(--border)]/70 bg-[var(--bg-base)]/40 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs font-medium text-[var(--text-primary)]">当前解析到的环境</h3>
+            <Button className="shrink-0" onClick={() => void refreshEnvDiag()}>
+              重新检测
+            </Button>
+          </div>
+          {envDiag.status === 'loading' ? (
+            <p className="text-xs text-[var(--text-muted)]">检测中…</p>
+          ) : null}
+          {envDiag.status === 'ok' ? (
+            <div className="space-y-1 text-xs leading-5 text-[var(--text-muted)]">
+              <p>
+                <span className="text-[var(--text-primary)]">SDK：</span>
+                {envDiag.androidHome}
+              </p>
+              <p>
+                <span className="text-[var(--text-primary)]">JDK：</span>
+                {envDiag.javaHome}
+              </p>
+            </div>
+          ) : null}
+          {envDiag.status === 'error' && envDiag.errorText ? (
+            <p className="text-xs text-[var(--danger)]">{envDiag.errorText}</p>
+          ) : null}
+          {envDiag.lines.length > 0 ? (
+            <ul className="list-disc space-y-1 pl-4 text-xs leading-5 text-[var(--text-muted)]">
+              {envDiag.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
+          <p className="text-[11px] leading-4 text-[var(--text-muted)]">
+            优先使用上方 SDK 路径；其次环境变量；再次最近工程的 local.properties（只读）。
+          </p>
+        </div>
         <TextField
           id="advanced-gradle-args"
           label="高级 Gradle 参数"

@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F10 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | F04、F08 |
 | PRD | FR-08、§13 |
 | 触发语 | `开始执行 F10` |
@@ -57,10 +57,10 @@ resolveBuildEnv(input: {
 
 ## 5. 验收清单
 
-- [ ] 三级优先级行为正确（单测或手工矩阵）
-- [ ] 不修改 `local.properties`
-- [ ] JAVA_HOME 来自登记 JDK
-- [ ] 错误码 `E_NO_SDK` / `E_NO_JDK` 正确
+- [x] 三级优先级行为正确（单测或手工矩阵）
+- [x] 不修改 `local.properties`
+- [x] JAVA_HOME 来自登记 JDK
+- [x] 错误码 `E_NO_SDK` / `E_NO_JDK` 正确
 
 ## 6. 完成动作
 
