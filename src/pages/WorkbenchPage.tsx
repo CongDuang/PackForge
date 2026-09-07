@@ -1,22 +1,25 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import BuildLogPanel, { type LogLine } from '../components/BuildLogPanel'
 import JdkSelect from '../components/JdkSelect'
 import ModuleSelect from '../components/ModuleSelect'
 import ProjectPicker from '../components/ProjectPicker'
 import ProjectSigning from '../components/ProjectSigning'
 import VariantConfig from '../components/VariantConfig'
-import type { BuildKind, JdkInstall, ProjectValidation, VariantDiscovery } from '../shared/types'
+import Button from '../components/ui/Button'
+import { composeFlavorPart } from '../shared/taskName'
+import type {
+  BuildKind,
+  BuildStatusEvent,
+  JdkInstall,
+  ProjectValidation,
+  VariantDiscovery,
+} from '../shared/types'
 
 function packforgeApi() {
   return window.packforge
 }
 
-function PlaceholderCard({
-  title,
-  children,
-}: {
-  title: string
-  children: string
-}) {
+function PlaceholderCard({ title, children }: { title: string; children: string }) {
   return (
     <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
       <h2 className="text-sm font-medium text-[var(--text-primary)]">{title}</h2>
@@ -51,6 +54,77 @@ export default function WorkbenchPage() {
   const [jdkInstalls, setJdkInstalls] = useState<JdkInstall[]>([])
   const [jdkId, setJdkId] = useState('')
   const [jdkError, setJdkError] = useState<string | undefined>()
+  const [buildId, setBuildId] = useState<string | null>(null)
+  const [buildStatus, setBuildStatus] = useState<BuildStatusEvent['status'] | 'idle'>('idle')
+  const [buildHint, setBuildHint] = useState<string | undefined>()
+  const [logLines, setLogLines] = useState<LogLine[]>([])
+  const logBufferRef = useRef<LogLine[]>([])
+  const logFlushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const logIdRef = useRef(0)
+
+  const flavorPart = useMemo(() => {
+    if (!discovery) return ''
+    return composeFlavorPart(
+      discovery.flavorDimensions.map((dim) => flavorByDimension[dim.name] ?? dim.flavors[0] ?? ''),
+    )
+  }, [discovery, flavorByDimension])
+
+  const flushLogs = useCallback(() => {
+    if (logFlushTimer.current) {
+      clearTimeout(logFlushTimer.current)
+      logFlushTimer.current = undefined
+    }
+    const batch = logBufferRef.current
+    if (batch.length === 0) return
+    logBufferRef.current = []
+    setLogLines((prev) => {
+      const next = [...prev, ...batch]
+      return next.length > 5000 ? next.slice(next.length - 5000) : next
+    })
+  }, [])
+
+  const enqueueLog = useCallback(
+    (line: string, stream: 'stdout' | 'stderr') => {
+      logIdRef.current += 1
+      logBufferRef.current.push({ id: logIdRef.current, line, stream })
+      if (!logFlushTimer.current) {
+        logFlushTimer.current = setTimeout(() => {
+          logFlushTimer.current = undefined
+          flushLogs()
+        }, 50)
+      }
+    },
+    [flushLogs],
+  )
+
+  useEffect(() => {
+    const api = packforgeApi()
+    if (!api) return
+    const offLog = api.onBuildLog((e) => {
+      enqueueLog(e.line, e.stream)
+    })
+    const offStatus = api.onBuildStatus((e) => {
+      flushLogs()
+      setBuildStatus(e.status)
+      if (e.status !== 'running') {
+        setBuildId(null)
+      }
+      if (e.error) {
+        setBuildHint(`${e.error.code}：${e.error.message}`)
+      } else if (e.status === 'succeeded') {
+        setBuildHint('构建成功')
+      } else if (e.status === 'cancelled') {
+        setBuildHint('已取消')
+      } else {
+        setBuildHint(undefined)
+      }
+    })
+    return () => {
+      offLog()
+      offStatus()
+      flushLogs()
+    }
+  }, [enqueueLog, flushLogs])
 
   const refreshVariants = useCallback(async (projectPath: string, module: string) => {
     const api = packforgeApi()
@@ -151,6 +225,52 @@ export default function WorkbenchPage() {
     void refreshVariants(project.path, moduleName)
   }, [project, moduleName, refreshVariants])
 
+  const running = buildStatus === 'running'
+
+  async function handleStart() {
+    const api = packforgeApi()
+    if (!api || !project || !jdkId) {
+      setBuildHint('请先打开工程并选择 JDK')
+      return
+    }
+    setBuildHint(undefined)
+    setLogLines([])
+    logBufferRef.current = []
+    const signing = await api.getProjectSigning(project.path)
+    if (!signing.ok) {
+      setBuildHint(`${signing.error.code}：${signing.error.message}`)
+      return
+    }
+    const signingProfileId =
+      signing.data?.inject && signing.data.profile ? signing.data.profile.id : null
+    const result = await api.startBuild({
+      projectPath: project.path,
+      module: moduleName,
+      kind,
+      flavorPart,
+      buildType,
+      jdkId,
+      signingProfileId,
+      extraArgs: [],
+    })
+    if (!result.ok) {
+      setBuildHint(`${result.error.code}：${result.error.message}`)
+      setBuildStatus('idle')
+      return
+    }
+    setBuildId(result.data.buildId)
+    setBuildStatus('running')
+  }
+
+  async function handleCancel() {
+    const api = packforgeApi()
+    if (!api || !buildId) return
+    const result = await api.cancelBuild(buildId)
+    if (!result.ok) {
+      setBuildHint(`${result.error.code}：${result.error.message}`)
+    }
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_280px] gap-3">
@@ -196,29 +316,38 @@ export default function WorkbenchPage() {
             </div>
           </section>
           {project ? <ProjectSigning key={project.path} projectPath={project.path} /> : null}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              disabled
-              className="rounded-md bg-[var(--accent-dim)] px-4 py-2 text-sm text-[var(--bg-base)] opacity-50"
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="primary"
+              disabled={!project || !jdkId || running}
+              onClick={() => void handleStart()}
             >
               开始打包
-            </button>
-            <span className="text-xs text-[var(--text-muted)]">
-              {jdkId ? '开始打包将在后续任务接入' : '尚未选择 JDK，按钮保持禁用'}
-            </span>
+            </Button>
+            <Button disabled={!running} onClick={() => void handleCancel()}>
+              取消
+            </Button>
+            {buildHint ? (
+              <span className="text-xs text-[var(--text-muted)]">{buildHint}</span>
+            ) : (
+              <span className="text-xs text-[var(--text-muted)]">
+                {!project ? '请先打开工程' : !jdkId ? '请选择 JDK' : running ? '构建中…' : '就绪'}
+              </span>
+            )}
           </div>
         </div>
         <PlaceholderCard title="产物">
           构建完成后在此列出 APK / AAB / mapping，支持复制到文件夹或剪贴板。F12 再实现。
         </PlaceholderCard>
       </div>
-      <section className="h-40 shrink-0 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
-        <h2 className="text-sm font-medium text-[var(--text-primary)]">构建日志</h2>
-        <p className="mt-1.5 font-mono text-xs leading-5 text-[var(--text-muted)]">
-          Gradle 输出将流式显示于此。F11 接入 spawn 与脱敏。
-        </p>
-      </section>
+      <BuildLogPanel
+        lines={logLines}
+        statusText={running ? 'running' : buildStatus === 'idle' ? undefined : buildStatus}
+        onClear={() => {
+          setLogLines([])
+          logBufferRef.current = []
+        }}
+      />
     </div>
   )
 }

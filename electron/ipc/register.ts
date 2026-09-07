@@ -19,6 +19,7 @@ import {
   upsertProjectSigning,
 } from '../services/signing'
 import { resolveBuildEnv } from '../services/env'
+import { cancelBuild, startBuild } from '../services/buildRunner'
 import {
   getJdkState,
   getRecentProjects,
@@ -126,8 +127,8 @@ const handlers: Record<InvokeMethod, Handler> = {
       },
     )
   },
-  startBuild: () => notImplemented('startBuild'),
-  cancelBuild: () => notImplemented('cancelBuild'),
+  startBuild: (request) => startBuild(request),
+  cancelBuild: (buildId) => cancelBuild(buildId),
   scanArtifacts: () => notImplemented('scanArtifacts'),
   copyArtifactsToFolder: () => notImplemented('copyArtifactsToFolder'),
   copyPathsToClipboard: () => notImplemented('copyPathsToClipboard'),
