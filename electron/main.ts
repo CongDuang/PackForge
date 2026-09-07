@@ -7,7 +7,7 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: 'PackForge',
+    title: '匠包 — 本地 Android 打包工作台',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
