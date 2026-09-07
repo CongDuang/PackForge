@@ -35,8 +35,8 @@ onBuildStatus(cb: (e: {
 ### 进程行为
 
 1. `cwd` = Wrapper 所在目录（项目 path）。
-2. 命令：`wrapperCommand` + 参数：`[taskName, ...signingArgs, ...extraArgs, ...settings.advancedGradleArgs 拆分]`。  
-   `taskName = buildGradleTaskName(...)`。
+2. 命令：`wrapperCommand` + 参数：`[clean, taskName, ...signingArgs, ...extraArgs, ...settings.advancedGradleArgs 拆分]`。  
+   每次开始打包前先 `clean`（PRD v1.5）；`taskName = buildGradleTaskName(...)`。
 3. `env = { ...process.env, ...resolveBuildEnv(...).env }`。
 4. **同时只允许一个 running build**（第二次 start → 明确错误 message；不必新错误码）。
 5. 日志环形缓冲：内存最近 **5000** 行；可另附写入 `{userData}/logs/packforge-YYYYMMDD.log`（可选但推荐）。
