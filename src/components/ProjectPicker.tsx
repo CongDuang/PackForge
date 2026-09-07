@@ -11,7 +11,11 @@ function formatError(code: string, message: string): string {
   return `${code}：${message}`
 }
 
-export default function ProjectPicker() {
+type ProjectPickerProps = {
+  onProjectChange?: (project: ProjectValidation | null) => void
+}
+
+export default function ProjectPicker({ onProjectChange }: ProjectPickerProps) {
   const [pathValue, setPathValue] = useState('')
   const [recent, setRecent] = useState<ProjectRef[]>([])
   const [current, setCurrent] = useState<ProjectValidation | null>(null)
@@ -50,11 +54,13 @@ export default function ProjectPicker() {
       const opened = await api.openProject(trimmed)
       if (!opened.ok) {
         setCurrent(null)
+        onProjectChange?.(null)
         setNotice({ kind: 'error', text: formatError(opened.error.code, opened.error.message) })
         return
       }
       setPathValue(opened.data.path)
       setCurrent(opened.data)
+      onProjectChange?.(opened.data)
       setNotice({ kind: 'ok', text: `已识别 ${opened.data.wrapperKind}` })
       await refreshRecent()
     } finally {
@@ -97,7 +103,10 @@ export default function ProjectPicker() {
       setNotice({ kind: 'error', text: result.error.message })
       return
     }
-    if (current?.path === item.path) setCurrent(null)
+    if (current?.path === item.path) {
+      setCurrent(null)
+      onProjectChange?.(null)
+    }
     await refreshRecent()
   }
 

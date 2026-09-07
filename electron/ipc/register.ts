@@ -2,6 +2,7 @@ import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { appError } from '../../src/shared/errors'
 import { INVOKE_METHODS, invokeChannel, type InvokeMethod } from '../../src/shared/channels'
 import { err, ok, type Result } from '../../src/shared/result'
+import { listModules } from '../services/modules'
 import {
   pinRecentProjectInList,
   removeRecentProjectFromList,
@@ -58,7 +59,7 @@ const handlers: Record<InvokeMethod, Handler> = {
     setRecentProjects(pinRecentProjectInList(getRecentProjects(), String(id ?? ''), Boolean(pinned)))
     return ok(undefined)
   },
-  listModules: () => notImplemented('listModules'),
+  listModules: (projectPath) => listModules(String(projectPath ?? '')),
   discoverVariants: () => notImplemented('discoverVariants'),
   previewTaskName: () => notImplemented('previewTaskName'),
   listJdks: () => ok(getJdkState()),
