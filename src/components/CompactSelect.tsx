@@ -1,10 +1,20 @@
+export type CompactOption = string | { value: string; label: string }
+
 type CompactSelectProps = {
   id: string
   label: string
   value: string
-  options: string[]
+  options: CompactOption[]
   disabled?: boolean
   onChange: (value: string) => void
+}
+
+function optionValue(option: CompactOption): string {
+  return typeof option === 'string' ? option : option.value
+}
+
+function optionLabel(option: CompactOption): string {
+  return typeof option === 'string' ? option : option.label
 }
 
 export default function CompactSelect({
@@ -31,9 +41,9 @@ export default function CompactSelect({
           {options.length === 0 ? (
             <option value="">—</option>
           ) : (
-            options.map((name) => (
-              <option key={name} value={name}>
-                {name}
+            options.map((option) => (
+              <option key={optionValue(option)} value={optionValue(option)}>
+                {optionLabel(option)}
               </option>
             ))
           )}

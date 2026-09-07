@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F08 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | F03 |
 | PRD | FR-04、§3.2（无下载） |
 | 触发语 | `开始执行 F08` |
@@ -47,10 +47,10 @@ setDefaultJdk(id: string | null): Result<void>
 
 ## 5. 验收清单
 
-- [ ] 可导入 ≥1 个真实 JDK 并显示版本
-- [ ] 移除后磁盘目录仍在
-- [ ] 无下载入口
-- [ ] 数据写入 `jdk.installs` / `jdk.defaultId`
+- [x] 可导入 ≥1 个真实 JDK 并显示版本
+- [x] 移除后磁盘目录仍在
+- [x] 无下载入口
+- [x] 数据写入 `jdk.installs` / `jdk.defaultId`
 
 ## 6. 完成动作
 

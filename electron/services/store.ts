@@ -50,6 +50,10 @@ export function getJdkState(): { installs: JdkInstall[]; defaultId: string | nul
   return getAppStore().get('jdk')
 }
 
+export function setJdkState(jdk: { installs: JdkInstall[]; defaultId: string | null }): void {
+  getAppStore().set('jdk', jdk)
+}
+
 export function getSigningProfiles(): SigningProfileMeta[] {
   return getAppStore().get('signing.profiles')
 }

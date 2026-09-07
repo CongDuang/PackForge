@@ -10,8 +10,8 @@ import {
   validateProject,
 } from '../services/project'
 import { discoverVariants, isBuildKind, previewTaskName } from '../services/variants'
+import { importJdk, listJdks, removeJdk, setDefaultJdk } from '../services/jdk'
 import {
-  getJdkState,
   getRecentProjects,
   getSettingsFromStore,
   getSigningProfiles,
@@ -71,10 +71,10 @@ const handlers: Record<InvokeMethod, Handler> = {
       buildType: String(body.buildType ?? 'Release'),
     })
   },
-  listJdks: () => ok(getJdkState()),
-  importJdk: () => notImplemented('importJdk'),
-  removeJdk: () => notImplemented('removeJdk'),
-  setDefaultJdk: () => notImplemented('setDefaultJdk'),
+  listJdks: () => listJdks(),
+  importJdk: (homePath) => importJdk(String(homePath ?? '')),
+  removeJdk: (id) => removeJdk(String(id ?? '')),
+  setDefaultJdk: (id) => setDefaultJdk(id == null || id === '' ? null : String(id)),
   listSigningProfiles: () => ok(getSigningProfiles()),
   upsertSigningProfile: () => notImplemented('upsertSigningProfile'),
   deleteSigningProfile: () => notImplemented('deleteSigningProfile'),

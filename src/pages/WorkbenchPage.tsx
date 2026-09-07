@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import JdkSelect from '../components/JdkSelect'
 import ModuleSelect from '../components/ModuleSelect'
 import ProjectPicker from '../components/ProjectPicker'
 import VariantConfig from '../components/VariantConfig'
-import type { BuildKind, ProjectValidation, VariantDiscovery } from '../shared/types'
+import type { BuildKind, JdkInstall, ProjectValidation, VariantDiscovery } from '../shared/types'
 
 function packforgeApi() {
   return window.packforge
@@ -46,6 +47,9 @@ export default function WorkbenchPage() {
   const [flavorByDimension, setFlavorByDimension] = useState<Record<string, string>>({})
   const [variantLoading, setVariantLoading] = useState(false)
   const [variantError, setVariantError] = useState<string | undefined>()
+  const [jdkInstalls, setJdkInstalls] = useState<JdkInstall[]>([])
+  const [jdkId, setJdkId] = useState('')
+  const [jdkError, setJdkError] = useState<string | undefined>()
 
   const refreshVariants = useCallback(async (projectPath: string, module: string) => {
     const api = packforgeApi()
@@ -69,6 +73,43 @@ export default function WorkbenchPage() {
       setVariantLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    const api = packforgeApi()
+    if (!api) {
+      setJdkError('请在桌面应用内选择 JDK')
+      return
+    }
+    let cancelled = false
+    void api.listJdks().then((result) => {
+      if (cancelled) return
+      if (!result.ok) {
+        setJdkError(`${result.error.code}：${result.error.message}`)
+        return
+      }
+      setJdkInstalls(result.data.installs)
+      setJdkId(result.data.defaultId ?? '')
+      setJdkError(undefined)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function changeJdk(id: string) {
+    const api = packforgeApi()
+    if (!api) {
+      setJdkError('请在桌面应用内选择 JDK')
+      return
+    }
+    const result = await api.setDefaultJdk(id)
+    if (!result.ok) {
+      setJdkError(`${result.error.code}：${result.error.message}`)
+      return
+    }
+    setJdkId(id)
+    setJdkError(undefined)
+  }
 
   useEffect(() => {
     if (!project) {
@@ -117,9 +158,11 @@ export default function WorkbenchPage() {
           <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
             <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
             <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
-              选择模块、产物类型与变体，预览将执行的 Gradle 任务名。
+              选择 JDK、模块、产物类型与变体，预览将执行的 Gradle 任务名。
             </p>
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
+              <JdkSelect installs={jdkInstalls} value={jdkId} onChange={(id) => void changeJdk(id)} />
+              {jdkError ? <p className="text-xs text-[var(--danger)]">{jdkError}</p> : null}
               {project ? (
                 <>
                   <ModuleSelect
@@ -159,7 +202,9 @@ export default function WorkbenchPage() {
             >
               开始打包
             </button>
-            <span className="text-xs text-[var(--text-muted)]">尚未选择 JDK，按钮保持禁用</span>
+            <span className="text-xs text-[var(--text-muted)]">
+              {jdkId ? '开始打包将在后续任务接入' : '尚未选择 JDK，按钮保持禁用'}
+            </span>
           </div>
         </div>
         <PlaceholderCard title="产物">
