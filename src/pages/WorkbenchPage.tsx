@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import ArtifactsPanel from '../components/ArtifactsPanel'
 import BuildLogPanel, { type LogLine } from '../components/BuildLogPanel'
 import JdkSelect from '../components/JdkSelect'
 import ModuleSelect from '../components/ModuleSelect'
@@ -8,6 +9,7 @@ import VariantConfig from '../components/VariantConfig'
 import Button from '../components/ui/Button'
 import { composeFlavorPart } from '../shared/taskName'
 import type {
+  ArtifactItem,
   BuildKind,
   BuildStatusEvent,
   JdkInstall,
@@ -17,15 +19,6 @@ import type {
 
 function packforgeApi() {
   return window.packforge
-}
-
-function PlaceholderCard({ title, children }: { title: string; children: string }) {
-  return (
-    <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
-      <h2 className="text-sm font-medium text-[var(--text-primary)]">{title}</h2>
-      <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">{children}</p>
-    </section>
-  )
 }
 
 function pickDefaultBuildType(types: string[]): string {
@@ -58,6 +51,10 @@ export default function WorkbenchPage() {
   const [buildStatus, setBuildStatus] = useState<BuildStatusEvent['status'] | 'idle'>('idle')
   const [buildHint, setBuildHint] = useState<string | undefined>()
   const [logLines, setLogLines] = useState<LogLine[]>([])
+  const [artifacts, setArtifacts] = useState<ArtifactItem[]>([])
+  const [selectedArtifactPaths, setSelectedArtifactPaths] = useState<string[]>([])
+  const [showAllArtifacts, setShowAllArtifacts] = useState(false)
+  const [artifactNotice, setArtifactNotice] = useState<string | undefined>()
   const logBufferRef = useRef<LogLine[]>([])
   const logFlushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const logIdRef = useRef(0)
@@ -97,6 +94,29 @@ export default function WorkbenchPage() {
     [flushLogs],
   )
 
+  const refreshArtifacts = useCallback(async () => {
+    const api = packforgeApi()
+    if (!api || !project) {
+      setArtifacts([])
+      return
+    }
+    const result = await api.scanArtifacts({
+      projectPath: project.path,
+      module: moduleName,
+      flavorPart,
+      buildType,
+      kind,
+      showAllModuleArtifacts: showAllArtifacts,
+    })
+    if (!result.ok) {
+      setArtifactNotice(`${result.error.code}：${result.error.message}`)
+      return
+    }
+    setArtifacts(result.data.items)
+    setSelectedArtifactPaths((prev) => prev.filter((p) => result.data.items.some((i) => i.path === p)))
+    setArtifactNotice(undefined)
+  }, [project, moduleName, flavorPart, buildType, kind, showAllArtifacts])
+
   useEffect(() => {
     const api = packforgeApi()
     if (!api) return
@@ -113,6 +133,7 @@ export default function WorkbenchPage() {
         setBuildHint(`${e.error.code}：${e.error.message}`)
       } else if (e.status === 'succeeded') {
         setBuildHint('构建成功')
+        void refreshArtifacts()
       } else if (e.status === 'cancelled') {
         setBuildHint('已取消')
       } else {
@@ -124,7 +145,16 @@ export default function WorkbenchPage() {
       offStatus()
       flushLogs()
     }
-  }, [enqueueLog, flushLogs])
+  }, [enqueueLog, flushLogs, refreshArtifacts])
+
+  useEffect(() => {
+    if (!project) {
+      setArtifacts([])
+      setSelectedArtifactPaths([])
+      return
+    }
+    void refreshArtifacts()
+  }, [project, refreshArtifacts])
 
   const refreshVariants = useCallback(async (projectPath: string, module: string) => {
     const api = packforgeApi()
@@ -271,9 +301,49 @@ export default function WorkbenchPage() {
     }
   }
 
+  async function copyToFolder() {
+    const api = packforgeApi()
+    if (!api || selectedArtifactPaths.length === 0) return
+    const dir = await api.pickDirectory()
+    if (!dir.ok) {
+      setArtifactNotice(`${dir.error.code}：${dir.error.message}`)
+      return
+    }
+    if (!dir.data) return
+    const result = await api.copyArtifactsToFolder(selectedArtifactPaths, dir.data)
+    if (!result.ok) {
+      setArtifactNotice(`${result.error.code}：${result.error.message}`)
+      return
+    }
+    setArtifactNotice(`已复制 ${result.data.copied.length} 个文件`)
+  }
+
+  async function copyPaths() {
+    const api = packforgeApi()
+    if (!api || selectedArtifactPaths.length === 0) return
+    const result = await api.copyPathsToClipboard(selectedArtifactPaths)
+    setArtifactNotice(result.ok ? '已复制路径' : `${result.error.code}：${result.error.message}`)
+  }
+
+  async function writeFilesClipboard() {
+    const api = packforgeApi()
+    if (!api || selectedArtifactPaths.length === 0) return
+    const result = await api.writeFilesToClipboard(selectedArtifactPaths)
+    setArtifactNotice(
+      result.ok ? '已写入文件剪贴板' : `${result.error.code}：${result.error.message}`,
+    )
+  }
+
+  async function reveal(filePath: string) {
+    const api = packforgeApi()
+    if (!api) return
+    const result = await api.showItemInFolder(filePath)
+    if (!result.ok) setArtifactNotice(`${result.error.code}：${result.error.message}`)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_280px] gap-3">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_320px] gap-3">
         <div className="flex min-h-0 flex-col gap-3 overflow-auto">
           <ProjectPicker onProjectChange={setProject} />
           <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
@@ -336,9 +406,20 @@ export default function WorkbenchPage() {
             )}
           </div>
         </div>
-        <PlaceholderCard title="产物">
-          构建完成后在此列出 APK / AAB / mapping，支持复制到文件夹或剪贴板。F12 再实现。
-        </PlaceholderCard>
+        <ArtifactsPanel
+          items={artifacts}
+          selectedPaths={selectedArtifactPaths}
+          showAll={showAllArtifacts}
+          notice={artifactNotice}
+          fileClipboardHint="若提示不可用，请改用「复制到文件夹」。"
+          onToggleShowAll={setShowAllArtifacts}
+          onSelectionChange={setSelectedArtifactPaths}
+          onRefresh={() => void refreshArtifacts()}
+          onCopyPaths={() => void copyPaths()}
+          onCopyToFolder={() => void copyToFolder()}
+          onWriteFilesClipboard={() => void writeFilesClipboard()}
+          onReveal={(p) => void reveal(p)}
+        />
       </div>
       <BuildLogPanel
         lines={logLines}

@@ -21,6 +21,16 @@ import {
 import { resolveBuildEnv } from '../services/env'
 import { cancelBuild, startBuild } from '../services/buildRunner'
 import {
+  copyArtifactsToFolder,
+  parseScanArtifactsInput,
+  scanArtifacts,
+} from '../services/artifacts'
+import {
+  copyPathsToClipboard,
+  showItemInFolder,
+  writeFilesToClipboard,
+} from '../services/clipboardFiles'
+import {
   getJdkState,
   getRecentProjects,
   getSettingsFromStore,
@@ -60,10 +70,6 @@ async function pickFile(): Promise<Result<string>> {
     return ok('')
   }
   return ok(picked.filePaths[0])
-}
-
-function notImplemented(method: string): Result<never> {
-  return err(appError('E_NOT_IMPLEMENTED', `尚未实现：${method}`, method))
 }
 
 type Handler = (...args: unknown[]) => Promise<Result<unknown>> | Result<unknown>
@@ -129,11 +135,21 @@ const handlers: Record<InvokeMethod, Handler> = {
   },
   startBuild: (request) => startBuild(request),
   cancelBuild: (buildId) => cancelBuild(buildId),
-  scanArtifacts: () => notImplemented('scanArtifacts'),
-  copyArtifactsToFolder: () => notImplemented('copyArtifactsToFolder'),
-  copyPathsToClipboard: () => notImplemented('copyPathsToClipboard'),
-  writeFilesToClipboard: () => notImplemented('writeFilesToClipboard'),
-  showItemInFolder: () => notImplemented('showItemInFolder'),
+  scanArtifacts: (input) => {
+    const parsed = parseScanArtifactsInput(input)
+    if (!parsed) return err(appError('E_ARTIFACT_NONE', '产物扫描参数不完整'))
+    return scanArtifacts(parsed)
+  },
+  copyArtifactsToFolder: (paths, targetDir) =>
+    copyArtifactsToFolder(
+      Array.isArray(paths) ? paths.map((item) => String(item)) : [],
+      String(targetDir ?? ''),
+    ),
+  copyPathsToClipboard: (paths) =>
+    copyPathsToClipboard(Array.isArray(paths) ? paths.map((item) => String(item)) : []),
+  writeFilesToClipboard: (paths) =>
+    writeFilesToClipboard(Array.isArray(paths) ? paths.map((item) => String(item)) : []),
+  showItemInFolder: (filePath) => showItemInFolder(String(filePath ?? '')),
 }
 
 export function registerIpcHandlers(): void {
