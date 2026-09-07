@@ -9,9 +9,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "rewriteRelativeImportExtensions": true,
     "sourceMap": true,
     "types": ["node"]
   },
   "include": ["electron/**/*.ts", "src/shared/**/*.ts"],
-  "exclude": ["src/shared/**/*.test.ts", "electron/preload.ts"]
+  "exclude": ["src/shared/**/*.test.ts", "electron/**/*.test.ts", "electron/preload.ts"]
 }

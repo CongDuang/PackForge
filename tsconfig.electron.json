@@ -4,6 +4,7 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
@@ -12,5 +13,5 @@
     "types": ["node"]
   },
   "include": ["electron/**/*.ts", "src/shared/**/*.ts"],
-  "exclude": ["src/shared/**/*.test.ts"]
+  "exclude": ["src/shared/**/*.test.ts", "electron/**/*.test.ts"]
 }

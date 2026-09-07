@@ -3,7 +3,7 @@
 | 字段 | 内容 |
 |------|------|
 | 编号 | F05 |
-| 状态 | `pending` |
+| 状态 | `done` |
 | 依赖 | F03（UI 壳可用 F02） |
 | PRD | FR-01、§13 |
 | 触发语 | `开始执行 F05` |
@@ -72,11 +72,11 @@ pnpm dev    # 选真实/伪造工程目录，错误码与成功路径符合预�
 
 ## 7. 验收清单
 
-- [ ] Mac/Linux 逻辑使用 `gradlew`；代码中 Windows 分支使用 `gradlew.bat`
-- [ ] 缺 Wrapper / settings 时阻断并返回正确错误码
-- [ ] 最近 20 条、置顶/移除可用
-- [ ] 无全局 `gradle` 回退
-- [ ] 有单元测试覆盖核心识别分支
+- [x] Mac/Linux 逻辑使用 `gradlew`；代码中 Windows 分支使用 `gradlew.bat`
+- [x] 缺 Wrapper / settings 时阻断并返回正确错误码
+- [x] 最近 20 条、置顶/移除可用
+- [x] 无全局 `gradle` 回退
+- [x] 有单元测试覆盖核心识别分支
 
 ## 8. 完成动作
 

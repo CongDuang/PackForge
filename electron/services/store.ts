@@ -41,6 +41,11 @@ export function getRecentProjects(): ProjectRef[] {
   return getAppStore().get('projects.recent')
 }
 
+export function setRecentProjects(recent: ProjectRef[]): ProjectRef[] {
+  getAppStore().set('projects.recent', recent)
+  return recent
+}
+
 export function getJdkState(): { installs: JdkInstall[]; defaultId: string | null } {
   return getAppStore().get('jdk')
 }

@@ -3,10 +3,17 @@ import { appError } from '../../src/shared/errors'
 import { INVOKE_METHODS, invokeChannel, type InvokeMethod } from '../../src/shared/channels'
 import { err, ok, type Result } from '../../src/shared/result'
 import {
+  pinRecentProjectInList,
+  removeRecentProjectFromList,
+  upsertRecentProject,
+  validateProject,
+} from '../services/project'
+import {
   getJdkState,
   getRecentProjects,
   getSettingsFromStore,
   getSigningProfiles,
+  setRecentProjects,
   setSettingsInStore,
 } from '../services/store'
 
@@ -35,11 +42,22 @@ const handlers: Record<InvokeMethod, Handler> = {
   getSettings: () => ok(getSettingsFromStore()),
   setSettings: (partial) => ok(setSettingsInStore((partial ?? {}) as Parameters<typeof setSettingsInStore>[0])),
   pickDirectory,
-  validateProject: () => notImplemented('validateProject'),
+  validateProject: (projectPath) => validateProject(String(projectPath ?? '')),
   listRecentProjects: () => ok(getRecentProjects()),
-  openProject: () => notImplemented('openProject'),
-  removeRecentProject: () => notImplemented('removeRecentProject'),
-  pinRecentProject: () => notImplemented('pinRecentProject'),
+  openProject: (projectPath) => {
+    const validated = validateProject(String(projectPath ?? ''))
+    if (!validated.ok) return validated
+    setRecentProjects(upsertRecentProject(getRecentProjects(), validated.data))
+    return validated
+  },
+  removeRecentProject: (id) => {
+    setRecentProjects(removeRecentProjectFromList(getRecentProjects(), String(id ?? '')))
+    return ok(undefined)
+  },
+  pinRecentProject: (id, pinned) => {
+    setRecentProjects(pinRecentProjectInList(getRecentProjects(), String(id ?? ''), Boolean(pinned)))
+    return ok(undefined)
+  },
   listModules: () => notImplemented('listModules'),
   discoverVariants: () => notImplemented('discoverVariants'),
   previewTaskName: () => notImplemented('previewTaskName'),

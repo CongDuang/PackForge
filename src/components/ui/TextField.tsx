@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, KeyboardEvent } from 'react'
 
 type TextFieldProps = {
   id: string
@@ -6,6 +6,7 @@ type TextFieldProps = {
   value: string
   onChange: (value: string) => void
   onBlur?: () => void
+  onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   placeholder?: string
   multiline?: boolean
   hint?: string
@@ -17,6 +18,7 @@ export default function TextField({
   value,
   onChange,
   onBlur,
+  onKeyDown,
   placeholder,
   multiline,
   hint,
@@ -40,6 +42,7 @@ export default function TextField({
           value={value}
           onChange={handleChange}
           onBlur={onBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           className={`${fieldClass} resize-y font-mono`}
         />
@@ -50,6 +53,7 @@ export default function TextField({
           value={value}
           onChange={handleChange}
           onBlur={onBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           className={`${fieldClass} font-mono`}
         />

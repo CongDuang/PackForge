@@ -1,3 +1,5 @@
+import ProjectPicker from '../components/ProjectPicker'
+
 function PlaceholderCard({
   title,
   children,
@@ -17,10 +19,8 @@ export default function WorkbenchPage() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_280px] gap-3">
-        <div className="flex min-h-0 flex-col gap-3">
-          <PlaceholderCard title="项目">
-            在此选择或粘贴 Android 工程路径，识别 gradlew / gradlew.bat。本页仅为占位，F05 再接选择器。
-          </PlaceholderCard>
+        <div className="flex min-h-0 flex-col gap-3 overflow-auto">
+          <ProjectPicker />
           <PlaceholderCard title="打包配置">
             模块、产物类型、flavor、buildType 将在此组合任务名。F07 落地前保持占位。
           </PlaceholderCard>
@@ -32,7 +32,7 @@ export default function WorkbenchPage() {
             >
               开始打包
             </button>
-            <span className="text-xs text-[var(--text-muted)]">尚未选择项目与 JDK，按钮保持禁用</span>
+            <span className="text-xs text-[var(--text-muted)]">尚未选择 JDK，按钮保持禁用</span>
           </div>
         </div>
         <PlaceholderCard title="产物">
