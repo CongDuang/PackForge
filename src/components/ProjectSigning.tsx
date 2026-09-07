@@ -11,9 +11,10 @@ function packforgeApi() {
 
 type ProjectSigningProps = {
   projectPath: string
+  onBindingChange?: (binding: ProjectSigningBinding | null) => void
 }
 
-export default function ProjectSigning({ projectPath }: ProjectSigningProps) {
+export default function ProjectSigning({ projectPath, onBindingChange }: ProjectSigningProps) {
   const [inject, setInject] = useState(true)
   const [storeFile, setStoreFile] = useState('')
   const [keyAlias, setKeyAlias] = useState('')
@@ -57,6 +58,7 @@ export default function ProjectSigning({ projectPath }: ProjectSigningProps) {
 
   function applyBinding(next: ProjectSigningBinding | null) {
     setBinding(next)
+    onBindingChange?.(next)
     setReveal(false)
     setStorePassword('')
     setKeyPassword('')
