@@ -98,7 +98,12 @@ const handlers: Record<InvokeMethod, Handler> = {
     return ok(undefined)
   },
   listModules: (projectPath) => listModules(String(projectPath ?? '')),
-  discoverVariants: (projectPath, module) => discoverVariants(String(projectPath ?? ''), String(module ?? '')),
+  discoverVariants: (projectPath, module, jdkId) =>
+    discoverVariants(
+      String(projectPath ?? ''),
+      String(module ?? ''),
+      jdkId == null || jdkId === '' ? null : String(jdkId),
+    ),
   previewTaskName: (req) => {
     const body = (req ?? {}) as Record<string, unknown>
     return previewTaskName({

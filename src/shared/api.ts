@@ -52,6 +52,7 @@ export type PackforgeApi = {
   discoverVariants: (
     projectPath: string,
     module: string,
+    jdkId?: string | null,
   ) => Promise<Result<VariantDiscovery>>
   previewTaskName: (
     req: Pick<BuildRequest, 'module' | 'kind' | 'flavorPart' | 'buildType'>,

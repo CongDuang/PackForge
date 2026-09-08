@@ -4,7 +4,7 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.6 |
+| 文档版本 | v1.7 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
@@ -15,6 +15,7 @@
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.7 | 2026-09-08 | 变体动态发现与打包共用 resolveBuildEnv（应用内 JDK/SDK），避免正式包误走静态回退 |
 | v1.6 | 2026-09-08 | 产物分享仅保留「复制到文件夹」；不展示 output-metadata.json；开发者工具需特殊触发 |
 | v1.5 | 2026-09-07 | 每次开始打包前先执行 Wrapper `clean`，再跑目标 assemble/bundle 任务 |
 | v1.4 | 2026-09-07 | 签名与工程路径 1:1 绑定；去掉独立「签名管理」页，改在工作台首次配置并缓存 |
@@ -319,7 +320,7 @@ android-packing-tools/
 
 **发现策略（优先级从高到低）：**
 
-1. **动态（主路径）：** 执行  
+1. **动态（主路径）：** 使用与打包相同的 `resolveBuildEnv`（应用内登记 JDK + 设置中的 Android SDK）执行  
    `gradlew :<module>:tasks --all`  
    （可加 `--group=build` 等过滤，以实现时为准），解析输出中的 `assemble*` / `bundle*` 任务。
 2. **静态（回退）：** 粗解析模块 `build.gradle` / `build.gradle.kts` 中的 `buildTypes`、`productFlavors`、`flavorDimensions`；组合名按 AGP 规则驼峰拼接。
@@ -335,7 +336,8 @@ android-packing-tools/
 
 - 能生成并执行等价于 `bundleProdRelease`、`assembleProdRelease`、`bundleDevDebug`、`assembleDevDebug` 的任务。
 - 无 flavor 时任务为 `assembleRelease` / `bundleRelease` 等形式。
-- 动态发现失败时自动尝试静态回退，并在 UI 标注「回退解析，请核对」。
+- 动态发现失败时自动尝试静态回退，并在 UI 标注「回退解析，请核对」及失败原因摘要。
+- 正式包从访达启动时，只要应用内已配置 JDK/SDK，动态发现应能与终端 `pnpm dev` 一样成功（不依赖 GUI 进程自带的 JAVA_HOME）。
 
 ### FR-04 JDK 导入与选择（P0）
 
@@ -701,7 +703,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 ## 19. 关键产品决策备忘（防摇摆）
 
 1. **只跑项目 Wrapper**，不跑 Android Studio 内置 Gradle。  
-2. **变体发现：** 动态 `tasks` 优先，静态解析回退。  
+2. **变体发现：** 动态 `tasks` 优先（环境与打包一致），静态解析回退。
 3. **签名：** 与工程路径绑定；AGP injected properties，不改工程；无独立签名管理页。  
 4. **密码：** keytar；UI/日志打码。  
 5. **JDK：** 仅导入本机路径并登记；不下载、不缓存安装包；MVP 强制从已登记列表选择；系统 JDK 仅作警告级回退可在设置中开启（默认关）。  

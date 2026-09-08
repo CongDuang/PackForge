@@ -241,7 +241,7 @@ export default function WorkbenchPage() {
     s.setVariantLoading(true)
     s.setVariantError(undefined)
     try {
-      const result = await api.discoverVariants(projectPath, module)
+      const result = await api.discoverVariants(projectPath, module, s.jdkId || null)
       if (!result.ok) {
         s.setDiscovery(null)
         s.setVariantError(formatUserError(result.error.code, result.error.message))
@@ -327,7 +327,7 @@ export default function WorkbenchPage() {
   useEffect(() => {
     if (!project || !moduleName.trim()) return
     void refreshVariants(project.path, moduleName)
-  }, [project, moduleName, refreshVariants])
+  }, [project, moduleName, jdkId, refreshVariants])
 
   const running = buildStatus === 'running'
 
