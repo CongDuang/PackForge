@@ -4,17 +4,18 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.5 |
+| 文档版本 | v1.6 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
 | 作者 | PackForge 产品设计 |
-| 最近更新 | 2026-09-07 |
+| 最近更新 | 2026-09-08 |
 
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.6 | 2026-09-08 | 产物分享仅保留「复制到文件夹」；不展示 output-metadata.json；开发者工具需特殊触发 |
 | v1.5 | 2026-09-07 | 每次开始打包前先执行 Wrapper `clean`，再跑目标 assemble/bundle 任务 |
 | v1.4 | 2026-09-07 | 签名与工程路径 1:1 绑定；去掉独立「签名管理」页，改在工作台首次配置并缓存 |
 | v1.3 | 2026-09-07 | 包管理器统一为 pnpm（禁止默认 npm/yarn） |
@@ -61,7 +62,7 @@
 
 ### 2.3 机会
 
-做一个**纯本地、零遥测**的桌面工具：选项目 → 选 JDK / 变体 →（按工程绑定或带出签名）→ 一键 Gradle 打包 → 产物列表支持复制到文件夹 / 路径 / 文件剪贴板。全程不依赖 Android Studio GUI。
+做一个**纯本地、零遥测**的桌面工具：选项目 → 选 JDK / 变体 →（按工程绑定或带出签名）→ 一键 Gradle 打包 → 产物列表支持复制到文件夹。全程不依赖 Android Studio GUI。
 
 ---
 
@@ -73,7 +74,7 @@
 2. 导入并管理本机已安装的多个 JDK，打包时可选 `JAVA_HOME`（不提供在线下载）。
 3. 将签名配置（keystore、密码、别名）与工程路径绑定；打包时注入签名且**不修改**工程 `build.gradle`。无独立签名管理页。
 4. 读取并展示 `buildType` / `productFlavor`（及维度组合），拼装 `assembleXxx` / `bundleXxx` 任务。
-5. 打包结束后汇总产物（APK、AAB、`mapping.txt` 等），支持单选/多选复制到文件夹、复制路径、写入系统文件剪贴板（便于粘贴到访达/资源管理器/部分 IM）。**不做**从列表拖出到外部应用。
+5. 打包结束后汇总产物（APK、AAB、`mapping.txt`），支持单选/多选**复制到文件夹**。**不做**从列表拖出到外部应用；**不提供**复制路径与系统文件剪贴板。
 6. 同一套产品覆盖 macOS 与 Windows。
 7. 品牌与视觉按「本地工坊 / 不上云」vibe 设计（见第 6 章）。
 
@@ -106,7 +107,7 @@
 | US-2 | 作为开发者，我选择 JDK 17/21 再打包，这样不同项目不会互相污染环境 | P0 |
 | US-3 | 作为开发者，我首次打开某工程时绑定签名，再次打开自动带出，且密码不写进工程文件 | P0 |
 | US-4 | 作为开发者，我勾选 flavor=`Prod`、buildType=`Release`、产物类型=`AAB`，一键生成 `bundleProdRelease` | P0 |
-| US-5 | 作为开发者，打包完成后我多选 APK + mapping，复制到共享盘或通过文件剪贴板粘贴发给同事 | P0 |
+| US-5 | 作为开发者，打包完成后我多选 APK + mapping，复制到共享盘发给同事 | P0 |
 | US-6 | 作为开发者，我在多模块工程里选择正确的 `app` 模块再打包 | P0 |
 | US-7 | 作为开发者，我把本机已安装的 JDK 17/21 导入列表并在打包前切换 | P0 |
 
@@ -116,7 +117,7 @@
 打开匠包 → 选择/最近打开项目 → 校验 Wrapper + SDK
   →（可选）刷新变体列表 → 选择模块 / Flavor / BuildType / APK|AAB
   → 选择 JDK → 绑定或自动带出本工程签名 → 开始打包 → 实时看日志
-  → 成功 → 产物面板勾选 → 复制到文件夹 / 复制路径 / 文件剪贴板
+  → 成功 → 产物面板勾选 → 复制到文件夹
 ```
 
 ---
@@ -127,7 +128,7 @@
 
 | 层 | 选型 | 用途 |
 |----|------|------|
-| 桌面壳 | **Electron 33** | 无沙箱限制地选目录、拉起 Gradle、写系统文件剪贴板、复制产物到目标文件夹 |
+| 桌面壳 | **Electron 33** | 无沙箱限制地选目录、拉起 Gradle、复制产物到目标文件夹 |
 | 包管理 | **pnpm** | 项目唯一包管理器；禁止默认使用 npm / yarn |
 | 渲染层 | **React 19 + TypeScript 5 + Vite** | 打包工作台 UI |
 | 样式 | **Tailwind CSS 4** | 「本地工坊 / 深色专业工具」风格 |
@@ -178,7 +179,7 @@ flowchart LR
   Gradlew --> Log[流式日志回传 UI]
   Gradlew --> Scan[扫描 build/outputs]
   Scan --> Artifacts[产物列表]
-  Artifacts --> Share[复制到文件夹 / 路径 / 文件剪贴板]
+  Artifacts --> Share[复制到文件夹]
 ```
 
 ### 5.4 推荐仓库结构（实现阶段参考）
@@ -216,10 +217,12 @@ android-packing-tools/
 ### 6.2 图标与 vibe（由背景推断）
 
 - **隐喻：** 密封包装箱（产物）+ 盾牌/锁（签名与隐私、不上云）。
-- **气质：** 深色专业工具、工坊金属质感，点缀 **Android 绿**（约 `#3DDC84`）作为成功/强调色。
+- **气质：** 深色专业工具为品牌默认气质，支持**浅色 / 深色 / 跟随系统**；工坊金属质感，点缀 **Android 绿**（约 `#3DDC84`）作为成功/强调色。
 - **避免：** 紫粉渐变、轻量消费级「可爱」插画、云朵/上传箭头作为主视觉。
 
 ### 6.3 色板（建议 CSS 变量）
+
+深色（`data-theme="dark"`）：
 
 | Token | 建议值 | 用途 |
 |-------|--------|------|
@@ -232,6 +235,8 @@ android-packing-tools/
 | `--accent-dim` | `#2A9B5C` | hover |
 | `--danger` | `#F07178` | 失败、危险 |
 | `--warn` | `#E6B450` | 警告 |
+
+浅色（`data-theme="light"`）使用高对比浅底深字，保留同一组 accent/danger/warn 语义；用户可在设置中切换或跟随系统。
 
 ### 6.4 文案语气
 
@@ -517,14 +522,13 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 | APK | `build/outputs/apk/**/*.apk` |
 | AAB | `build/outputs/bundle/**/*.aab` |
 | Mapping | `build/outputs/mapping/**/mapping.txt` |
-| 元数据（可选） | `build/outputs/**/output-metadata.json` |
 | Native symbols（可选，P1） | `build/outputs/native-debug-symbols/**` |
 
-仅展示**本次构建相关变体**优先；同时提供「显示该模块全部产物」开关。
+**不展示** `output-metadata.json`。仅展示**本次构建相关变体**优先；同时提供「显示该模块全部产物」开关。
 
 ### 10.2 产物列表字段
 
-- 文件名、类型标签（APK/AAB/Mapping/其他）
+- 文件名、类型标签（APK/AAB/Mapping）
 - 完整路径、文件大小、修改时间
 - 复选框（多选）
 
@@ -532,18 +536,19 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 
 | 操作 | 行为 |
 |------|------|
-| 复制路径 | 将绝对路径字符串写入文本剪贴板 |
 | 在访达/资源管理器中显示 | `shell.showItemInFolder` |
 | 复制文件到文件夹 | 选目标目录，将勾选文件 `copyFile` 过去；重名时追加时间戳 |
-| 复制文件到剪贴板 | 主进程写入系统**文件**剪贴板（macOS/Windows 各实现），便于在支持文件粘贴的应用中粘贴 |
 | 全选 / 反选 | 多选辅助 |
+
+**不做：** 复制路径到文本剪贴板、写入系统文件剪贴板、列表拖出。
 
 ### 10.4 AC
 
 - 成功 `assemble` 后至少能看到对应 APK；成功 `bundle` 后至少能看到对应 AAB。
 - minify 开启的 release 构建能看到 `mapping.txt`（若 Gradle 已输出）。
+- 列表中不出现 `output-metadata.json`。
+- 复制到文件夹必须可用。
 - 多选 2 个以上文件复制到新文件夹后，目标目录文件齐全且校验大小一致。
-- 文件剪贴板在目标 OS 可用（若平台受限须在 UI 标明，但复制到文件夹必须可用）。
 
 ---
 
@@ -600,9 +605,9 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 | Wrapper | `gradlew` + 可执行位修复 | `gradlew.bat` |
 | 路径 | POSIX；注意空格引号 | 反斜杠；盘符；空格 |
 | 钥匙串 | Keychain via keytar | Credential Manager via keytar |
-| 文件剪贴板 | NSPasteboard 文件 URL | CF_HDROP / PowerShell/Native |
 | 杀进程树 | `SIGTERM`/`SIGKILL` 组 | 杀子进程树，避免残留 `java` |
 | 安装形态 | dmg/zip | nsis |
+| 开发者工具 | 正式包与开发态均保留；快捷键 `Cmd/Ctrl+Alt+Shift+D`，或设置页连点版本号 7 次 | 同左 |
 
 ---
 
@@ -642,7 +647,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 ### MVP（v1.0）
 
 - FR-01～FR-04（含导入本机 JDK，无下载）、FR-05～FR-10（双平台可安装）
-- 产物列表 + 复制到文件夹 + 路径复制 + 文件剪贴板（至少一平台完善，另一平台对等实现；**无拖出**）
+- 产物列表 + 复制到文件夹（**无拖出**；无路径复制 / 文件剪贴板）
 - 品牌深色 UI 初版 + 应用图标
 - 开发任务拆分见仓库 `features/`（F01–F14）
 
@@ -672,7 +677,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 - [ ] 在工作台为本工程绑定签名，release 包使用 injected signing，工程文件无新增密码明文；再次打开同路径自动带出
 - [ ] 成功打出 APK 与 AAB 各至少一次（可用演示工程）
 - [ ] 产物区显示包体与 mapping（若有），支持单选/多选复制到文件夹
-- [ ] 支持文件剪贴板（目标 OS）；复制到文件夹与复制路径可用（**无拖出要求**）
+- [ ] 复制到文件夹可用（**无拖出、无路径复制、无文件剪贴板**）
 - [ ] 构建日志流式显示；可取消构建
 - [ ] 缺 Wrapper / 缺 SDK / 构建失败时错误码与提示符合第 15 章
 - [ ] 日志与命令预览中密码已脱敏
@@ -701,7 +706,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 4. **密码：** keytar；UI/日志打码。  
 5. **JDK：** 仅导入本机路径并登记；不下载、不缓存安装包；MVP 强制从已登记列表选择；系统 JDK 仅作警告级回退可在设置中开启（默认关）。  
 6. **SDK：** 只读检测，设置可覆盖。  
-7. **产物分享：** 复制到文件夹 + 复制路径 + 文件剪贴板；**不做拖出**。  
+7. **产物分享：** 复制到文件夹；**不做**拖出、复制路径、文件剪贴板。列表仅 APK / AAB / `mapping.txt`。
 8. **隐私：** 零遥测；MVP 默认无出站网络。  
 9. **品牌：** 匠包 PackForge；深色工坊 + 密封箱/盾牌 + Android 绿。
 10. **开发拆分：** 实现按 `features/F01`…`F14` 顺序执行；完成后自动 commit-and-push。

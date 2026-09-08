@@ -45,11 +45,24 @@ const api: PackforgeApi = {
       ipcRenderer.removeListener(EVENT_CHANNELS.buildStatus, listener)
     }
   },
+  onMenuPickProject: (cb) => {
+    const listener = () => cb()
+    ipcRenderer.on(EVENT_CHANNELS.menuPickProject, listener)
+    return () => {
+      ipcRenderer.removeListener(EVENT_CHANNELS.menuPickProject, listener)
+    }
+  },
+  onMenuOpenRecent: (cb) => {
+    const listener = (_event: unknown, projectPath: string) => cb(String(projectPath ?? ''))
+    ipcRenderer.on(EVENT_CHANNELS.menuOpenRecent, listener)
+    return () => {
+      ipcRenderer.removeListener(EVENT_CHANNELS.menuOpenRecent, listener)
+    }
+  },
   scanArtifacts: (input) => invoke('scanArtifacts', input),
   copyArtifactsToFolder: (paths, targetDir) => invoke('copyArtifactsToFolder', paths, targetDir),
-  copyPathsToClipboard: (paths) => invoke('copyPathsToClipboard', paths),
-  writeFilesToClipboard: (paths) => invoke('writeFilesToClipboard', paths),
   showItemInFolder: (path) => invoke('showItemInFolder', path),
+  toggleDevTools: () => invoke('toggleDevTools'),
 }
 
 contextBridge.exposeInMainWorld('packforge', api)

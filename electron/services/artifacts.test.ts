@@ -75,6 +75,28 @@ describe('scanArtifacts', () => {
     if (!all.ok) return
     assert.ok(all.data.items.some((i) => i.type === 'aab'))
   })
+
+  it('ignores output-metadata.json', () => {
+    const project = makeDir('meta')
+    const apkDir = path.join(project, 'app', 'build', 'outputs', 'apk', 'release')
+    mkdirSync(apkDir, { recursive: true })
+    writeFileSync(path.join(apkDir, 'app-release.apk'), 'apk')
+    writeFileSync(path.join(apkDir, 'output-metadata.json'), '{}')
+
+    const result = scanArtifacts({
+      projectPath: project,
+      module: 'app',
+      flavorPart: '',
+      buildType: 'Release',
+      kind: 'assemble',
+      showAllModuleArtifacts: true,
+    })
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.equal(result.data.items.length, 1)
+    assert.equal(result.data.items[0]?.type, 'apk')
+    assert.ok(!result.data.items.some((i) => i.path.endsWith('output-metadata.json')))
+  })
 })
 
 describe('copyArtifactsToFolder', () => {

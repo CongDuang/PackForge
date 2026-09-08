@@ -44,16 +44,20 @@ export type BuildRequest = {
 
 export type ArtifactItem = {
   path: string
-  type: 'apk' | 'aab' | 'mapping' | 'other'
+  type: 'apk' | 'aab' | 'mapping'
   size: number
   mtime: number
   buildId?: string
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark'
+
 export type AppSettings = {
   androidSdkPath: string
   allowSystemJdkFallback: boolean
   advancedGradleArgs: string
+  /** 外观：浅色 / 深色 / 跟随系统 */
+  theme: ThemePreference
 }
 
 export type ProjectValidation = {
@@ -96,4 +100,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   androidSdkPath: '',
   allowSystemJdkFallback: false,
   advancedGradleArgs: '',
+  theme: 'system',
 }

@@ -12,7 +12,8 @@
   --color-warn: var(--warn);
 }
 
-:root {
+/* 深色（品牌默认气质） */
+html[data-theme='dark'] {
   --bg-base: #0f1419;
   --bg-panel: #1a2332;
   --border: #2a3544;
@@ -22,6 +23,19 @@
   --accent-dim: #2a9b5c;
   --danger: #f07178;
   --warn: #e6b450;
+}
+
+/* 浅色 */
+html[data-theme='light'] {
+  --bg-base: #f4f6f8;
+  --bg-panel: #ffffff;
+  --border: #d5dde6;
+  --text-primary: #1a2332;
+  --text-muted: #5a6b7d;
+  --accent: #1f9d57;
+  --accent-dim: #178045;
+  --danger: #c9444c;
+  --warn: #b8860b;
 }
 
 html,

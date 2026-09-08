@@ -26,9 +26,7 @@ import {
   scanArtifacts,
 } from '../services/artifacts'
 import {
-  copyPathsToClipboard,
   showItemInFolder,
-  writeFilesToClipboard,
 } from '../services/clipboardFiles'
 import {
   getJdkState,
@@ -85,14 +83,18 @@ const handlers: Record<InvokeMethod, Handler> = {
     const validated = validateProject(String(projectPath ?? ''))
     if (!validated.ok) return validated
     setRecentProjects(upsertRecentProject(getRecentProjects(), validated.data))
+    // 延迟导入避免循环依赖
+    void import('../menu').then((m) => m.rebuildApplicationMenu())
     return validated
   },
   removeRecentProject: (id) => {
     setRecentProjects(removeRecentProjectFromList(getRecentProjects(), String(id ?? '')))
+    void import('../menu').then((m) => m.rebuildApplicationMenu())
     return ok(undefined)
   },
   pinRecentProject: (id, pinned) => {
     setRecentProjects(pinRecentProjectInList(getRecentProjects(), String(id ?? ''), Boolean(pinned)))
+    void import('../menu').then((m) => m.rebuildApplicationMenu())
     return ok(undefined)
   },
   listModules: (projectPath) => listModules(String(projectPath ?? '')),
@@ -145,11 +147,13 @@ const handlers: Record<InvokeMethod, Handler> = {
       Array.isArray(paths) ? paths.map((item) => String(item)) : [],
       String(targetDir ?? ''),
     ),
-  copyPathsToClipboard: (paths) =>
-    copyPathsToClipboard(Array.isArray(paths) ? paths.map((item) => String(item)) : []),
-  writeFilesToClipboard: (paths) =>
-    writeFilesToClipboard(Array.isArray(paths) ? paths.map((item) => String(item)) : []),
   showItemInFolder: (filePath) => showItemInFolder(String(filePath ?? '')),
+  toggleDevTools: () => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    if (!win) return err(appError('E_COPY_FAILED', '没有可调试的窗口'))
+    win.webContents.toggleDevTools()
+    return ok(undefined)
+  },
 }
 
 export function registerIpcHandlers(): void {

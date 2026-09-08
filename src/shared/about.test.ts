@@ -27,5 +27,6 @@ describe('settings defaults', () => {
     assert.equal(DEFAULT_SETTINGS.allowSystemJdkFallback, false)
     assert.equal(DEFAULT_SETTINGS.androidSdkPath, '')
     assert.equal(DEFAULT_SETTINGS.advancedGradleArgs, '')
+    assert.equal(DEFAULT_SETTINGS.theme, 'system')
   })
 })

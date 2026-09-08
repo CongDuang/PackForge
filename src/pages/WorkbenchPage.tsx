@@ -432,28 +432,6 @@ export default function WorkbenchPage() {
     s.setArtifactNotice(`已复制 ${result.data.copied.length} 个文件`)
   }
 
-  async function copyPaths() {
-    const api = packforgeApi()
-    const s = useWorkbenchStore.getState()
-    if (!api || s.selectedArtifactPaths.length === 0) return
-    const result = await api.copyPathsToClipboard(s.selectedArtifactPaths)
-    s.setArtifactNotice(
-      result.ok ? '已复制路径' : formatUserError(result.error.code, result.error.message),
-    )
-  }
-
-  async function writeFilesClipboard() {
-    const api = packforgeApi()
-    const s = useWorkbenchStore.getState()
-    if (!api || s.selectedArtifactPaths.length === 0) return
-    const result = await api.writeFilesToClipboard(s.selectedArtifactPaths)
-    s.setArtifactNotice(
-      result.ok
-        ? '已写入文件剪贴板，可在 IM/访达中 Cmd/Ctrl+V'
-        : formatUserError(result.error.code, result.error.message),
-    )
-  }
-
   async function reveal(filePath: string) {
     const api = packforgeApi()
     if (!api) return
@@ -469,7 +447,7 @@ export default function WorkbenchPage() {
   const actions = useWorkbenchStore.getState()
 
   return (
-    <div ref={rootRef} className="flex h-full min-h-0 flex-col gap-3">
+    <div ref={rootRef} className="relative flex h-full min-h-0 flex-col gap-3">
       {banner ? (
         <div
           role="status"
@@ -478,62 +456,112 @@ export default function WorkbenchPage() {
           {banner}
         </div>
       ) : null}
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_320px] gap-3">
-        <div className="flex min-h-0 flex-col gap-3 overflow-auto">
-          <ProjectPicker
-            project={project}
-            onProjectChange={actions.setProject}
-            onEditSigning={() => {
-              signingIntentRef.current += 1
-              useWorkbenchStore.getState().setSigningEditorOpen(true)
-            }}
-          />
-          <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
-            <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
-            <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
-              选择 JDK、模块、产物类型与变体；签名按工程路径绑定，可按需编辑。预检通过后即可开始打包。
-            </p>
-            <div className="mt-3 space-y-3">
-              <JdkSelect installs={jdkInstalls} value={jdkId} onChange={(id) => void changeJdk(id)} />
-              {jdkError ? <p className="text-xs text-[var(--danger)]">{jdkError}</p> : null}
-              {project ? (
-                <>
-                  <ModuleSelect
-                    modules={modules}
-                    value={moduleName}
-                    parseWarning={parseWarning}
-                    onChange={actions.setModule}
-                  />
-                  <VariantConfig
-                    module={moduleName}
-                    discovery={discovery}
-                    kind={kind}
-                    buildType={buildType}
-                    flavorByDimension={flavorSelections}
-                    loading={variantLoading}
-                    error={variantError}
-                    onKindChange={actions.setKind}
-                    onBuildTypeChange={actions.setBuildType}
-                    onFlavorChange={actions.setFlavor}
-                    onRefresh={() => {
-                      if (project) void refreshVariants(project.path, moduleName)
-                    }}
-                  />
-                </>
-              ) : (
-                <p className="text-xs text-[var(--text-muted)]">打开工程后将列出模块与变体</p>
-              )}
-            </div>
-          </section>
-          {project && signingEditorOpen ? (
-            <ProjectSigning
-              key={project.path}
-              projectPath={project.path}
-              onBindingChange={actions.setProjectSigning}
-              onSaved={() => useWorkbenchStore.getState().setSigningEditorOpen(false)}
-              onCleared={() => useWorkbenchStore.getState().setSigningEditorOpen(true)}
-            />
+      {!artifactsExpanded ? (
+        <button
+          type="button"
+          className={[
+            'absolute right-0 z-20 flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-sm outline-none hover:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
+            banner ? 'top-12' : 'top-0',
+          ].join(' ')}
+          onClick={() => useWorkbenchStore.getState().setArtifactsExpanded(true)}
+          title="展开产物"
+          aria-label="展开产物"
+        >
+          产物
+          {artifacts.length > 0 ? (
+            <span className="rounded bg-[var(--accent)]/20 px-1.5 py-0.5 font-mono text-[10px] text-[var(--accent)]">
+              {artifacts.length}
+            </span>
           ) : null}
+        </button>
+      ) : null}
+      <div
+        className={[
+          'grid min-h-0 flex-1 gap-3',
+          artifactsExpanded ? 'grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1',
+        ].join(' ')}
+      >
+        <div className="flex min-h-0 flex-col gap-3 overflow-auto">
+          <div className="relative space-y-3" aria-busy={running}>
+            <div className={running ? 'pointer-events-none select-none' : undefined}>
+              <ProjectPicker
+                project={project}
+                onProjectChange={actions.setProject}
+                onEditSigning={() => {
+                  signingIntentRef.current += 1
+                  useWorkbenchStore.getState().setSigningEditorOpen(true)
+                }}
+              />
+              <div className="mt-3">
+                <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
+                  <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
+                  <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
+                    选择 JDK、模块、产物类型与变体；签名按工程路径绑定，可按需编辑。预检通过后即可开始打包。
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    <JdkSelect
+                      installs={jdkInstalls}
+                      value={jdkId}
+                      onChange={(id) => void changeJdk(id)}
+                    />
+                    {jdkError ? <p className="text-xs text-[var(--danger)]">{jdkError}</p> : null}
+                    {project ? (
+                      <>
+                        <ModuleSelect
+                          modules={modules}
+                          value={moduleName}
+                          parseWarning={parseWarning}
+                          onChange={actions.setModule}
+                        />
+                        <VariantConfig
+                          module={moduleName}
+                          discovery={discovery}
+                          kind={kind}
+                          buildType={buildType}
+                          flavorByDimension={flavorSelections}
+                          loading={variantLoading}
+                          error={variantError}
+                          onKindChange={actions.setKind}
+                          onBuildTypeChange={actions.setBuildType}
+                          onFlavorChange={actions.setFlavor}
+                          onRefresh={() => {
+                            if (project) void refreshVariants(project.path, moduleName)
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <p className="text-xs text-[var(--text-muted)]">打开工程后将列出模块与变体</p>
+                    )}
+                  </div>
+                </section>
+              </div>
+              {project && signingEditorOpen ? (
+                <div className="mt-3">
+                  <ProjectSigning
+                    key={project.path}
+                    projectPath={project.path}
+                    onBindingChange={actions.setProjectSigning}
+                    onSaved={() => useWorkbenchStore.getState().setSigningEditorOpen(false)}
+                    onCleared={() => useWorkbenchStore.getState().setSigningEditorOpen(true)}
+                  />
+                </div>
+              ) : null}
+            </div>
+            {running ? (
+              <div
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-md bg-[var(--bg-base)]/75 backdrop-blur-[1px]"
+                role="status"
+                aria-live="polite"
+              >
+                <div
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--accent)]"
+                  aria-hidden
+                />
+                <p className="text-sm font-medium text-[var(--text-primary)]">构建中…</p>
+                <p className="text-xs text-[var(--text-muted)]">配置已锁定，完成后可再修改</p>
+              </div>
+            ) : null}
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="primary" disabled={!canStart} onClick={() => void handleStart()}>
               开始打包
@@ -553,24 +581,20 @@ export default function WorkbenchPage() {
             )}
           </div>
         </div>
-        <ArtifactsPanel
-          items={artifacts}
-          selectedPaths={selectedArtifactPaths}
-          showAll={showAllArtifacts}
-          expanded={artifactsExpanded}
-          notice={artifactNotice}
-          fileClipboardHint="勾选 APK/AAB 后点「文件剪贴板」，可在微信/访达等 Cmd/Ctrl+V 贴入文件。若不可用请改用「复制到文件夹」。"
-          onToggleExpanded={() =>
-            useWorkbenchStore.getState().setArtifactsExpanded(!artifactsExpanded)
-          }
-          onToggleShowAll={actions.setShowAllArtifacts}
-          onSelectionChange={actions.setSelectedArtifactPaths}
-          onRefresh={() => void refreshArtifacts()}
-          onCopyPaths={() => void copyPaths()}
-          onCopyToFolder={() => void copyToFolder()}
-          onWriteFilesClipboard={() => void writeFilesClipboard()}
-          onReveal={(p) => void reveal(p)}
-        />
+        {artifactsExpanded ? (
+          <ArtifactsPanel
+            items={artifacts}
+            selectedPaths={selectedArtifactPaths}
+            showAll={showAllArtifacts}
+            notice={artifactNotice}
+            onCollapse={() => useWorkbenchStore.getState().setArtifactsExpanded(false)}
+            onToggleShowAll={actions.setShowAllArtifacts}
+            onSelectionChange={actions.setSelectedArtifactPaths}
+            onRefresh={() => void refreshArtifacts()}
+            onCopyToFolder={() => void copyToFolder()}
+            onReveal={(p) => void reveal(p)}
+          />
+        ) : null}
       </div>
       <BuildLogPanel
         lines={logLines}

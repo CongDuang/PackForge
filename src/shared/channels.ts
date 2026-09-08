@@ -27,9 +27,8 @@ export const INVOKE_METHODS = [
   'cancelBuild',
   'scanArtifacts',
   'copyArtifactsToFolder',
-  'copyPathsToClipboard',
-  'writeFilesToClipboard',
   'showItemInFolder',
+  'toggleDevTools',
 ] as const
 
 export type InvokeMethod = (typeof INVOKE_METHODS)[number]
@@ -41,4 +40,6 @@ export function invokeChannel(method: InvokeMethod): string {
 export const EVENT_CHANNELS = {
   buildLog: `${PACKFORGE_CHANNEL_PREFIX}buildLog`,
   buildStatus: `${PACKFORGE_CHANNEL_PREFIX}buildStatus`,
+  menuPickProject: `${PACKFORGE_CHANNEL_PREFIX}menuPickProject`,
+  menuOpenRecent: `${PACKFORGE_CHANNEL_PREFIX}menuOpenRecent`,
 } as const

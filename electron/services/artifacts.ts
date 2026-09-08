@@ -42,7 +42,6 @@ function classify(filePath: string): ArtifactItem['type'] | null {
   if (base.endsWith('.apk')) return 'apk'
   if (base.endsWith('.aab')) return 'aab'
   if (base === 'mapping.txt') return 'mapping'
-  if (base === 'output-metadata.json') return 'other'
   return null
 }
 
@@ -76,7 +75,6 @@ export function scanArtifacts(input: ScanArtifactsInput): Result<{ items: Artifa
     ...walkFiles(path.join(outputs, 'apk')),
     ...walkFiles(path.join(outputs, 'bundle')),
     ...walkFiles(path.join(outputs, 'mapping')),
-    ...walkFiles(outputs).filter((file) => path.basename(file) === 'output-metadata.json'),
   ]
 
   const seen = new Set<string>()

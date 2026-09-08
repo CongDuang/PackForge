@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
 import { existsSync } from 'node:fs'
 import { registerIpcHandlers } from './ipc/register'
+import { configureAppIdentity, installApplicationMenu } from './menu'
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL) || !app.isPackaged
 
@@ -40,6 +41,8 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  configureAppIdentity()
+  installApplicationMenu()
   registerIpcHandlers()
   createWindow()
 

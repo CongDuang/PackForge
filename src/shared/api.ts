@@ -84,12 +84,14 @@ export type PackforgeApi = {
   cancelBuild: (buildId: string) => Promise<Result<void>>
   onBuildLog: (cb: (e: BuildLogEvent) => void) => () => void
   onBuildStatus: (cb: (e: BuildStatusEvent) => void) => () => void
+  onMenuPickProject: (cb: () => void) => () => void
+  onMenuOpenRecent: (cb: (projectPath: string) => void) => () => void
   scanArtifacts: (input: ScanArtifactsInput) => Promise<Result<{ items: ArtifactItem[] }>>
   copyArtifactsToFolder: (
     paths: string[],
     targetDir: string,
   ) => Promise<Result<{ copied: string[] }>>
-  copyPathsToClipboard: (paths: string[]) => Promise<Result<void>>
-  writeFilesToClipboard: (paths: string[]) => Promise<Result<void>>
   showItemInFolder: (path: string) => Promise<Result<void>>
+  /** 切换开发者工具（特殊触发；dev / 正式包均可用） */
+  toggleDevTools: () => Promise<Result<void>>
 }

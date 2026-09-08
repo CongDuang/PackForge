@@ -86,7 +86,7 @@ export default function JdkPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full max-w-none space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">JDK 管理</h1>

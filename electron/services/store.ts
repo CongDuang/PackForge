@@ -34,7 +34,7 @@ export function getAppStore(): Store<StoreSchema> {
 }
 
 export function getSettingsFromStore(): AppSettings {
-  return getAppStore().get('settings')
+  return { ...DEFAULT_SETTINGS, ...getAppStore().get('settings') }
 }
 
 export function setSettingsInStore(partial: Partial<AppSettings>): AppSettings {

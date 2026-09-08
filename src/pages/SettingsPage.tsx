@@ -3,7 +3,8 @@ import Button from '../components/ui/Button'
 import TextField from '../components/ui/TextField'
 import Toggle from '../components/ui/Toggle'
 import { PRIVACY_POINTS, PRODUCT_NAME, PRODUCT_SLOGAN } from '../shared/about'
-import type { AppSettings } from '../shared/types'
+import type { AppSettings, ThemePreference } from '../shared/types'
+import { notifyThemeChanged } from '../theme'
 
 const SAVE_DEBOUNCE_MS = 400
 
@@ -15,7 +16,10 @@ export default function SettingsPage() {
   const [sdkPath, setSdkPath] = useState('')
   const [allowFallback, setAllowFallback] = useState(false)
   const [gradleArgs, setGradleArgs] = useState('')
+  const [theme, setTheme] = useState<ThemePreference>('system')
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const versionClickRef = useRef({ count: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined })
+
   const [loadError, setLoadError] = useState<string | null>(null)
   const [envDiag, setEnvDiag] = useState<{
     status: 'idle' | 'loading' | 'ok' | 'error'
@@ -111,6 +115,7 @@ export default function SettingsPage() {
       setSdkPath(result.data.androidSdkPath)
       setAllowFallback(result.data.allowSystemJdkFallback)
       setGradleArgs(result.data.advancedGradleArgs)
+      setTheme(result.data.theme ?? 'system')
     })
     void refreshEnvDiag()
     return () => {
@@ -150,13 +155,48 @@ export default function SettingsPage() {
     await refreshEnvDiag()
   }
 
+  async function changeTheme(next: ThemePreference) {
+    flushPending()
+    setTheme(next)
+    notifyThemeChanged(next)
+    await persist({ theme: next })
+  }
+
+  function onVersionClick() {
+    const state = versionClickRef.current
+    if (state.timer) clearTimeout(state.timer)
+    state.count += 1
+    state.timer = setTimeout(() => {
+      state.count = 0
+      state.timer = undefined
+    }, 2000)
+    if (state.count < 7) return
+    state.count = 0
+    if (state.timer) {
+      clearTimeout(state.timer)
+      state.timer = undefined
+    }
+    const api = packforgeApi()
+    if (!api) {
+      setNotice({ kind: 'error', text: '设置仅在桌面应用内可用' })
+      return
+    }
+    void api.toggleDevTools().then((result) => {
+      if (!result.ok) {
+        setNotice({ kind: 'error', text: result.error.message })
+        return
+      }
+      setNotice({ kind: 'ok', text: '已切换开发者工具' })
+    })
+  }
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full max-w-none space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">设置</h1>
           <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-            配置 Android SDK 路径与高级 Gradle 参数。更改写入本机，不改工程文件。
+            配置外观、Android SDK 路径与高级 Gradle 参数。更改写入本机，不改工程文件。
           </p>
         </div>
         {notice ? (
@@ -175,6 +215,36 @@ export default function SettingsPage() {
       {loadError ? (
         <p className="text-sm text-[var(--danger)]">无法读取设置：{loadError}</p>
       ) : null}
+
+      <section className="space-y-4 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
+        <h2 className="text-sm font-medium text-[var(--text-primary)]">外观</h2>
+        <p className="text-xs leading-5 text-[var(--text-muted)]">
+          浅色、深色或跟随系统。默认跟随系统。
+        </p>
+        <div className="flex flex-wrap gap-1 rounded-md border border-[var(--border)] bg-[var(--bg-base)] p-0.5">
+          {(
+            [
+              { id: 'system', label: '跟随系统' },
+              { id: 'light', label: '浅色' },
+              { id: 'dark', label: '深色' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => void changeTheme(item.id)}
+              className={[
+                'rounded px-3 py-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
+                theme === item.id
+                  ? 'bg-[var(--accent)] text-[var(--bg-base)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+              ].join(' ')}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="space-y-4 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
         <h2 className="text-sm font-medium text-[var(--text-primary)]">环境</h2>
@@ -261,7 +331,13 @@ export default function SettingsPage() {
         <h2 className="text-sm font-medium text-[var(--text-primary)]">关于</h2>
         <p className="mt-2 text-sm text-[var(--text-primary)]">{PRODUCT_NAME}</p>
         <p className="mt-1 text-sm text-[var(--text-muted)]">{PRODUCT_SLOGAN}</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">版本 {__APP_VERSION__}</p>
+        <button
+          type="button"
+          className="mt-1 cursor-default text-left text-xs text-[var(--text-muted)] outline-none"
+          onClick={onVersionClick}
+        >
+          版本 {__APP_VERSION__}
+        </button>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs leading-5 text-[var(--text-muted)]">
           {PRIVACY_POINTS.map((point) => (
             <li key={point}>{point}</li>
