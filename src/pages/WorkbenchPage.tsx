@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ArtifactsPanel from '../components/ArtifactsPanel'
 import BuildLogPanel, { type LogLine } from '../components/BuildLogPanel'
 import JdkSelect from '../components/JdkSelect'
@@ -11,7 +11,7 @@ import { formatUserError } from '../shared/errorHints'
 import { preflightSync } from '../shared/preflight'
 import { buildGradleTaskName, composeFlavorPart } from '../shared/taskName'
 import type { VariantDiscovery } from '../shared/types'
-import { useWorkbenchStore } from '../store/workbenchStore'
+import { DEFAULT_LOG_HEIGHT, useWorkbenchStore } from '../store/workbenchStore'
 
 function packforgeApi() {
   return window.packforge
@@ -51,10 +51,29 @@ export default function WorkbenchPage() {
   const showAllArtifacts = useWorkbenchStore((s) => s.showAllArtifacts)
   const banner = useWorkbenchStore((s) => s.banner)
   const artifactNotice = useWorkbenchStore((s) => s.artifactNotice)
+  const signingEditorOpen = useWorkbenchStore((s) => s.signingEditorOpen)
+  const logExpanded = useWorkbenchStore((s) => s.logExpanded)
+  const logHeight = useWorkbenchStore((s) => s.logHeight)
+  const artifactsExpanded = useWorkbenchStore((s) => s.artifactsExpanded)
 
   const logBufferRef = useRef<LogLine[]>([])
   const logFlushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const logIdRef = useRef(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const signingIntentRef = useRef(0)
+  const [maxLogHeight, setMaxLogHeight] = useState(DEFAULT_LOG_HEIGHT * 2)
+
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const update = () => {
+      setMaxLogHeight(Math.max(DEFAULT_LOG_HEIGHT, Math.floor(el.clientHeight * 0.5)))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const flavorPart = useMemo(() => {
     if (!discovery) return ''
@@ -179,10 +198,38 @@ export default function WorkbenchPage() {
       s.setArtifacts([])
       s.setSelectedArtifactPaths([])
       s.setProjectSigning(null)
+      s.setSigningEditorOpen(false)
       return
     }
     void refreshArtifacts()
   }, [project, showAllArtifacts, moduleName, kind, buildType, flavorPart, refreshArtifacts])
+
+  useEffect(() => {
+    const api = packforgeApi()
+    const s = useWorkbenchStore.getState()
+    if (!project) return
+    if (!api) {
+      s.setSigningEditorOpen(true)
+      return
+    }
+    const intent = signingIntentRef.current
+    let cancelled = false
+    void api.getProjectSigning(project.path).then((result) => {
+      if (cancelled) return
+      if (!result.ok) {
+        s.setProjectSigning(null)
+        if (signingIntentRef.current === intent) s.setSigningEditorOpen(true)
+        return
+      }
+      s.setProjectSigning(result.data)
+      // 用户若已点「编辑签名」，勿覆盖为隐藏
+      if (signingIntentRef.current !== intent) return
+      s.setSigningEditorOpen(!result.data)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [project])
 
   const refreshVariants = useCallback(async (projectPath: string, module: string) => {
     const api = packforgeApi()
@@ -401,7 +448,9 @@ export default function WorkbenchPage() {
     if (!api || s.selectedArtifactPaths.length === 0) return
     const result = await api.writeFilesToClipboard(s.selectedArtifactPaths)
     s.setArtifactNotice(
-      result.ok ? '已写入文件剪贴板' : formatUserError(result.error.code, result.error.message),
+      result.ok
+        ? '已写入文件剪贴板，可在 IM/访达中 Cmd/Ctrl+V'
+        : formatUserError(result.error.code, result.error.message),
     )
   }
 
@@ -420,22 +469,29 @@ export default function WorkbenchPage() {
   const actions = useWorkbenchStore.getState()
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div ref={rootRef} className="flex h-full min-h-0 flex-col gap-3">
       {banner ? (
         <div
           role="status"
-          className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] px-3 py-2 text-xs leading-5 text-[var(--text-primary)]"
+          className="shrink-0 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] px-3 py-2 text-xs leading-5 text-[var(--text-primary)]"
         >
           {banner}
         </div>
       ) : null}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_320px] gap-3">
         <div className="flex min-h-0 flex-col gap-3 overflow-auto">
-          <ProjectPicker onProjectChange={actions.setProject} />
+          <ProjectPicker
+            project={project}
+            onProjectChange={actions.setProject}
+            onEditSigning={() => {
+              signingIntentRef.current += 1
+              useWorkbenchStore.getState().setSigningEditorOpen(true)
+            }}
+          />
           <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
             <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
             <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
-              选择 JDK、模块、产物类型与变体；签名按工程路径在下方绑定。预检通过后即可开始打包。
+              选择 JDK、模块、产物类型与变体；签名按工程路径绑定，可按需编辑。预检通过后即可开始打包。
             </p>
             <div className="mt-3 space-y-3">
               <JdkSelect installs={jdkInstalls} value={jdkId} onChange={(id) => void changeJdk(id)} />
@@ -469,11 +525,13 @@ export default function WorkbenchPage() {
               )}
             </div>
           </section>
-          {project ? (
+          {project && signingEditorOpen ? (
             <ProjectSigning
               key={project.path}
               projectPath={project.path}
               onBindingChange={actions.setProjectSigning}
+              onSaved={() => useWorkbenchStore.getState().setSigningEditorOpen(false)}
+              onCleared={() => useWorkbenchStore.getState().setSigningEditorOpen(true)}
             />
           ) : null}
           <div className="flex flex-wrap items-center gap-3">
@@ -499,8 +557,12 @@ export default function WorkbenchPage() {
           items={artifacts}
           selectedPaths={selectedArtifactPaths}
           showAll={showAllArtifacts}
+          expanded={artifactsExpanded}
           notice={artifactNotice}
-          fileClipboardHint="若提示不可用，请改用「复制到文件夹」。"
+          fileClipboardHint="勾选 APK/AAB 后点「文件剪贴板」，可在微信/访达等 Cmd/Ctrl+V 贴入文件。若不可用请改用「复制到文件夹」。"
+          onToggleExpanded={() =>
+            useWorkbenchStore.getState().setArtifactsExpanded(!artifactsExpanded)
+          }
           onToggleShowAll={actions.setShowAllArtifacts}
           onSelectionChange={actions.setSelectedArtifactPaths}
           onRefresh={() => void refreshArtifacts()}
@@ -513,6 +575,12 @@ export default function WorkbenchPage() {
       <BuildLogPanel
         lines={logLines}
         statusText={running ? 'running' : buildStatus === 'idle' ? undefined : buildStatus}
+        expanded={logExpanded}
+        height={Math.min(logHeight, maxLogHeight)}
+        minHeight={DEFAULT_LOG_HEIGHT}
+        maxHeight={maxLogHeight}
+        onToggleExpanded={() => useWorkbenchStore.getState().setLogExpanded(!logExpanded)}
+        onHeightChange={(h) => useWorkbenchStore.getState().setLogHeight(h)}
         onClear={() => {
           useWorkbenchStore.getState().clearLogs()
           logBufferRef.current = []

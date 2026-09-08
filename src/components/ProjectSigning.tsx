@@ -12,9 +12,16 @@ function packforgeApi() {
 type ProjectSigningProps = {
   projectPath: string
   onBindingChange?: (binding: ProjectSigningBinding | null) => void
+  onSaved?: () => void
+  onCleared?: () => void
 }
 
-export default function ProjectSigning({ projectPath, onBindingChange }: ProjectSigningProps) {
+export default function ProjectSigning({
+  projectPath,
+  onBindingChange,
+  onSaved,
+  onCleared,
+}: ProjectSigningProps) {
   const [inject, setInject] = useState(true)
   const [storeFile, setStoreFile] = useState('')
   const [keyAlias, setKeyAlias] = useState('')
@@ -164,6 +171,7 @@ export default function ProjectSigning({ projectPath, onBindingChange }: Project
         text: saved.data.inject ? '已绑定本工程签名，密码只写入系统钥匙串' : '已记住：本工程不注入签名',
       })
       await loadPreview(projectPath)
+      onSaved?.()
     } finally {
       setBusy(false)
     }
@@ -181,6 +189,7 @@ export default function ProjectSigning({ projectPath, onBindingChange }: Project
     }
     applyBinding(null)
     setNotice({ kind: 'ok', text: '已清除本工程签名绑定' })
+    onCleared?.()
   }
 
   function tryReveal() {

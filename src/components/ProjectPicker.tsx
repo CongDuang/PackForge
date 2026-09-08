@@ -12,15 +12,28 @@ function formatError(code: string, message: string): string {
 }
 
 type ProjectPickerProps = {
+  project?: ProjectValidation | null
   onProjectChange?: (project: ProjectValidation | null) => void
+  onEditSigning?: () => void
 }
 
-export default function ProjectPicker({ onProjectChange }: ProjectPickerProps) {
-  const [pathValue, setPathValue] = useState('')
+export default function ProjectPicker({
+  project = null,
+  onProjectChange,
+  onEditSigning,
+}: ProjectPickerProps) {
+  const [pathValue, setPathValue] = useState(project?.path ?? '')
   const [recent, setRecent] = useState<ProjectRef[]>([])
-  const [current, setCurrent] = useState<ProjectValidation | null>(null)
+  const [current, setCurrent] = useState<ProjectValidation | null>(project)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+
+  useEffect(() => {
+    setCurrent(project ?? null)
+    if (project?.path) {
+      setPathValue(project.path)
+    }
+  }, [project])
 
   const refreshRecent = useCallback(async () => {
     const api = packforgeApi()
@@ -110,6 +123,13 @@ export default function ProjectPicker({ onProjectChange }: ProjectPickerProps) {
     await refreshRecent()
   }
 
+  async function editSigningFor(item: ProjectRef) {
+    if (current?.path !== item.path) {
+      await openPath(item.path)
+    }
+    onEditSigning?.()
+  }
+
   return (
     <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
       <div className="flex items-start justify-between gap-4">
@@ -157,9 +177,14 @@ export default function ProjectPicker({ onProjectChange }: ProjectPickerProps) {
       </div>
 
       {current ? (
-        <p className="mt-2 font-mono text-xs leading-5 text-[var(--text-muted)]">
-          {current.settingsFile} · {current.wrapperCommand}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 font-mono text-xs leading-5 text-[var(--text-muted)]">
+            {current.settingsFile} · {current.wrapperCommand}
+          </p>
+          <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => onEditSigning?.()}>
+            编辑签名
+          </Button>
+        </div>
       ) : null}
 
       <div className="mt-4">
@@ -187,8 +212,16 @@ export default function ProjectPicker({ onProjectChange }: ProjectPickerProps) {
                       {item.pinned ? '★ ' : ''}
                       {item.displayName}
                     </span>
-                    <span className="block truncate font-mono text-[11px] text-[var(--text-muted)]">{item.path}</span>
+                    <span className="block truncate font-mono text-[11px] text-[var(--text-muted)]">
+                      {item.path}
+                    </span>
                   </button>
+                  <Button
+                    className="shrink-0 px-2 py-1 text-xs"
+                    onClick={() => void editSigningFor(item)}
+                  >
+                    编辑签名
+                  </Button>
                   <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => void pinItem(item)}>
                     {item.pinned ? '取消置顶' : '置顶'}
                   </Button>

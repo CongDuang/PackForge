@@ -5,6 +5,9 @@ import { promisify } from 'node:util'
 import { clipboard, shell } from 'electron'
 import { appError } from '../../src/shared/errors.ts'
 import { err, ok, type Result } from '../../src/shared/result.ts'
+import { filenamesPlistXml } from './filenamesPlist.ts'
+
+export { filenamesPlistXml } from './filenamesPlist.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -19,6 +22,33 @@ function normalizeExistingFiles(paths: string[]): Result<string[]> {
     }
   }
   return ok(list)
+}
+
+function fileUrlFromPath(absolutePath: string): string {
+  const segments = absolutePath.split(path.sep).map((seg) => encodeURIComponent(seg))
+  return `file://${segments.join('/')}`
+}
+
+/**
+ * AppKit 一次写入多种类型（Electron writeBuffer 每次会清空剪贴板，无法叠加）。
+ * 单文件时附带 public.file-url。
+ */
+async function writeMacPasteboardViaAppKit(absolutePaths: string[]): Promise<void> {
+  const pathsLiteral = JSON.stringify(absolutePaths)
+  const fileUrl =
+    absolutePaths.length === 1 ? JSON.stringify(fileUrlFromPath(absolutePaths[0]!)) : 'null'
+  const jxa = `
+ObjC.import('AppKit');
+var pb = $.NSPasteboard.generalPasteboard;
+pb.clearContents;
+var paths = ${pathsLiteral};
+pb.setPropertyListForType($(paths), 'NSFilenamesPboardType');
+var fileUrl = ${fileUrl};
+if (fileUrl) {
+  pb.setStringForType($(fileUrl), 'public.file-url');
+}
+`
+  await execFileAsync('osascript', ['-l', 'JavaScript', '-e', jxa])
 }
 
 export function copyPathsToClipboard(paths: string[]): Result<void> {
@@ -63,19 +93,31 @@ export async function writeFilesToClipboard(paths: string[]): Promise<Result<voi
   if (!files.ok) return files
 
   if (process.platform === 'darwin') {
-    const asPaths = files.data.map((file) => `POSIX file ${JSON.stringify(file)}`).join(', ')
-    const apple = `set the clipboard to {${asPaths}}`
     try {
-      await execFileAsync('osascript', ['-e', apple])
-      return ok(undefined)
-    } catch (cause) {
-      return err(
-        appError(
-          'E_COPY_FAILED',
-          '当前平台文件剪贴板不可用',
-          cause instanceof Error ? cause.message : String(cause),
-        ),
+      clipboard.writeBuffer(
+        'NSFilenamesPboardType',
+        Buffer.from(filenamesPlistXml(files.data), 'utf8'),
       )
+      // 单文件补 public.file-url；多类型需 AppKit（writeBuffer 无法叠加）
+      try {
+        await writeMacPasteboardViaAppKit(files.data)
+      } catch {
+        // 已有 NSFilenamesPboardType，增强失败可忽略
+      }
+      return ok(undefined)
+    } catch (primaryCause) {
+      try {
+        await writeMacPasteboardViaAppKit(files.data)
+        return ok(undefined)
+      } catch {
+        return err(
+          appError(
+            'E_COPY_FAILED',
+            '当前平台文件剪贴板不可用',
+            primaryCause instanceof Error ? primaryCause.message : String(primaryCause),
+          ),
+        )
+      }
     }
   }
 
