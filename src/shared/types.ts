@@ -40,6 +40,8 @@ export type BuildRequest = {
   jdkId: string
   signingProfileId: string | null
   extraArgs: string[]
+  /** 勾选后同一 Wrapper 调用先执行 clean */
+  cleanBeforeBuild: boolean
 }
 
 export type ArtifactItem = {

@@ -47,5 +47,17 @@ describe('parseBuildRequest', () => {
     assert.equal(parsed?.module, 'app')
     assert.equal(parsed?.signingProfileId, null)
     assert.deepEqual(parsed?.extraArgs, ['--offline'])
+    assert.equal(parsed?.cleanBeforeBuild, false)
+  })
+
+  it('keeps cleanBeforeBuild only when explicitly true', () => {
+    const parsed = parseBuildRequest({
+      projectPath: '/p',
+      module: 'app',
+      kind: 'assemble',
+      jdkId: '/jdk',
+      cleanBeforeBuild: true,
+    })
+    assert.equal(parsed?.cleanBeforeBuild, true)
   })
 })

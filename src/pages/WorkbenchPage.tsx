@@ -55,6 +55,7 @@ export default function WorkbenchPage() {
   const logExpanded = useWorkbenchStore((s) => s.logExpanded)
   const logHeight = useWorkbenchStore((s) => s.logHeight)
   const artifactsExpanded = useWorkbenchStore((s) => s.artifactsExpanded)
+  const cleanBeforeBuild = useWorkbenchStore((s) => s.cleanBeforeBuild)
 
   const logBufferRef = useRef<LogLine[]>([])
   const logFlushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -391,6 +392,7 @@ export default function WorkbenchPage() {
       jdkId: s.jdkId,
       signingProfileId: gate.data.signingProfileId,
       extraArgs: [],
+      cleanBeforeBuild: s.cleanBeforeBuild,
     })
     if (!result.ok) {
       const text = formatUserError(result.error.code, result.error.message)
@@ -569,7 +571,20 @@ export default function WorkbenchPage() {
             <Button disabled={!running} onClick={() => void handleCancel()}>
               取消
             </Button>
-            <span className="font-mono text-xs text-[var(--accent)]">{taskNamePreview}</span>
+            <label className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+              <input
+                type="checkbox"
+                checked={cleanBeforeBuild}
+                disabled={running}
+                onChange={(event) =>
+                  useWorkbenchStore.getState().setCleanBeforeBuild(event.target.checked)
+                }
+              />
+              打包前 clean
+            </label>
+            <span className="font-mono text-xs text-[var(--accent)]">
+              {cleanBeforeBuild ? `clean ${taskNamePreview}` : taskNamePreview}
+            </span>
             {!syncGate.ok ? (
               <span className="text-xs text-[var(--warn)]">
                 {formatUserError(syncGate.error.code, syncGate.error.message)}

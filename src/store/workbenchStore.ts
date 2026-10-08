@@ -13,6 +13,25 @@ import type {
 type BuildUiStatus = BuildStatusEvent['status'] | 'idle'
 
 export const DEFAULT_LOG_HEIGHT = 192
+const CLEAN_BEFORE_BUILD_KEY = 'packforge.cleanBeforeBuild'
+
+function readCleanBeforeBuild(): boolean {
+  try {
+    const raw = localStorage.getItem(CLEAN_BEFORE_BUILD_KEY)
+    if (raw === '0') return false
+    return true
+  } catch {
+    return true
+  }
+}
+
+function writeCleanBeforeBuild(next: boolean): void {
+  try {
+    localStorage.setItem(CLEAN_BEFORE_BUILD_KEY, next ? '1' : '0')
+  } catch {
+    // ignore
+  }
+}
 
 type WorkbenchState = {
   project: ProjectValidation | null
@@ -40,6 +59,7 @@ type WorkbenchState = {
   artifactsExpanded: boolean
   selectedArtifactPaths: string[]
   showAllArtifacts: boolean
+  cleanBeforeBuild: boolean
   lastError: string | null
   banner: string | null
   artifactNotice?: string
@@ -68,6 +88,7 @@ type WorkbenchState = {
   setArtifactsExpanded: (expanded: boolean) => void
   setSelectedArtifactPaths: (paths: string[] | ((prev: string[]) => string[])) => void
   setShowAllArtifacts: (show: boolean) => void
+  setCleanBeforeBuild: (clean: boolean) => void
   setLastError: (text: string | null) => void
   setBanner: (text: string | null) => void
   setArtifactNotice: (text: string | undefined) => void
@@ -98,6 +119,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   artifactsExpanded: false,
   selectedArtifactPaths: [],
   showAllArtifacts: false,
+  cleanBeforeBuild: readCleanBeforeBuild(),
   lastError: null,
   banner: null,
   setProject: (project) => set({ project, lastError: null }),
@@ -146,6 +168,10 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
           : selectedArtifactPaths,
     })),
   setShowAllArtifacts: (showAllArtifacts) => set({ showAllArtifacts }),
+  setCleanBeforeBuild: (cleanBeforeBuild) => {
+    writeCleanBeforeBuild(cleanBeforeBuild)
+    set({ cleanBeforeBuild })
+  },
   setLastError: (lastError) => set({ lastError }),
   setBanner: (banner) => set({ banner }),
   setArtifactNotice: (artifactNotice) => set({ artifactNotice }),

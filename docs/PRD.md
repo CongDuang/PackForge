@@ -4,17 +4,18 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.7 |
+| 文档版本 | v1.8 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
 | 作者 | PackForge 产品设计 |
-| 最近更新 | 2026-09-08 |
+| 最近更新 | 2026-10-08 |
 
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.8 | 2026-10-08 | 打包前 `clean` 改为工作台勾选，偏好写入本地并记住；未勾选则不附加 clean |
 | v1.7 | 2026-09-08 | 变体动态发现与打包共用 resolveBuildEnv（应用内 JDK/SDK），避免正式包误走静态回退 |
 | v1.6 | 2026-09-08 | 产物分享仅保留「复制到文件夹」；不展示 output-metadata.json；开发者工具需特殊触发 |
 | v1.5 | 2026-09-07 | 每次开始打包前先执行 Wrapper `clean`，再跑目标 assemble/bundle 任务 |
@@ -409,7 +410,7 @@ android-packing-tools/
 **行为：**
 
 - `cwd` 为项目 Wrapper 所在目录。
-- **每次开始打包前先执行 `clean`**（与目标任务同一 Wrapper 调用：`gradlew clean <task> …`），避免沿用旧产物。
+- 工作台提供「打包前 clean」勾选。勾选时与目标任务同一 Wrapper 调用：`gradlew clean <task> …`；未勾选则不附加 `clean`。勾选状态写入本地并在下次启动时恢复（默认勾选）。
 - 合并环境：`JAVA_HOME`、`ANDROID_HOME`/`ANDROID_SDK_ROOT`（见 FR-08）、原有 `PATH`。
 - stdout/stderr 流式推送到 UI；支持清空、搜索、复制全部日志（已脱敏）。
 - 取消：向进程树发送终止信号（Windows 需注意 `taskkill` / 杀进程树策略）。
@@ -419,7 +420,7 @@ android-packing-tools/
 - 长构建过程中 UI 不假死，日志持续追加。
 - 取消后进程结束，状态变为「已取消」，不误报成功。
 - 退出码非 0 时展示失败摘要 + 错误码 `E_BUILD_FAILED`。
-- 日志命令预览可见先执行 `clean`。
+- 勾选 clean 时，日志命令预览可见先执行 `clean`；未勾选时预览不含 `clean`。
 
 ### FR-07 产物发现与复制分享（P0）
 

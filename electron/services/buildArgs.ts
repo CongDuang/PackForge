@@ -77,6 +77,7 @@ export function parseBuildRequest(raw: unknown): {
   jdkId: string
   signingProfileId: string | null
   extraArgs: string[]
+  cleanBeforeBuild: boolean
 } | null {
   const body = (raw ?? {}) as Record<string, unknown>
   const kind = body.kind
@@ -100,5 +101,6 @@ export function parseBuildRequest(raw: unknown): {
     jdkId,
     signingProfileId,
     extraArgs,
+    cleanBeforeBuild: body.cleanBeforeBuild === true,
   }
 }

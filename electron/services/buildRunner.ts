@@ -156,10 +156,10 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
     buildType: request.buildType,
   })
   const advanced = splitGradleArgs(settings.advancedGradleArgs)
-  // 每次打包前先 clean，再跑目标任务（同一 Wrapper 调用）
-  const args = ['clean', taskName, ...signingArgs, ...request.extraArgs, ...advanced]
+  const cleanPrefix = request.cleanBeforeBuild ? ['clean'] : []
+  const args = [...cleanPrefix, taskName, ...signingArgs, ...request.extraArgs, ...advanced]
   const previewArgs = [
-    'clean',
+    ...cleanPrefix,
     taskName,
     ...signingArgs.map((arg) => redactSecrets(arg, secrets)),
     ...request.extraArgs,
