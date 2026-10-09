@@ -225,7 +225,11 @@ export default function ProjectPicker({
                   <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => void pinItem(item)}>
                     {item.pinned ? '取消置顶' : '置顶'}
                   </Button>
-                  <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => void removeItem(item)}>
+                  <Button
+                    variant="danger"
+                    className="shrink-0 px-2 py-1 text-xs"
+                    onClick={() => void removeItem(item)}
+                  >
                     移除
                   </Button>
                 </li>

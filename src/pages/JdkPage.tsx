@@ -153,7 +153,9 @@ export default function JdkPage() {
                           <Button disabled={isDefault} onClick={() => void makeDefault(install.id)}>
                             设为默认
                           </Button>
-                          <Button onClick={() => void removeFromList(install.id)}>移除</Button>
+                          <Button variant="danger" onClick={() => void removeFromList(install.id)}>
+                            移除
+                          </Button>
                         </div>
                       </td>
                     </tr>

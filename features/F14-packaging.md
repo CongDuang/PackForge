@@ -30,7 +30,7 @@
 `package.json` / `electron-builder` 配置中：
 
 - `appId`：建议 `com.packforge.app`（冻结后勿随意改）
-- `productName`：`PackForge`（界面中文名仍为匠包）
+- `productName`：`匠包`（英文名 PackForge 预留给后续国际化）
 
 ### 3.2 package.json scripts
 

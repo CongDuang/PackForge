@@ -1,4 +1,10 @@
-export const PRODUCT_NAME = '匠包 PackForge'
+/** 各语言产品名。当前界面只用中文；接入国际化后英文区显示 PackForge。 */
+export const PRODUCT_NAME_BY_LOCALE = {
+  zh: '匠包',
+  en: 'PackForge',
+} as const
+
+export const PRODUCT_NAME = PRODUCT_NAME_BY_LOCALE.zh
 export const PRODUCT_SLOGAN = '本地锻造，不上云'
 
 /** 关于页固定披露（语义不可删，可微调标点）。 */

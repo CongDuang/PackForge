@@ -29,6 +29,8 @@ export const INVOKE_METHODS = [
   'copyArtifactsToFolder',
   'showItemInFolder',
   'toggleDevTools',
+  'listAdbDevices',
+  'installApk',
 ] as const
 
 export type InvokeMethod = (typeof INVOKE_METHODS)[number]

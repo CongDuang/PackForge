@@ -112,7 +112,9 @@ export default function BuildLogPanel({
                 className="h-7 w-36 rounded border border-[var(--border)] bg-[var(--bg-base)] px-2 text-xs text-[var(--text-primary)] outline-none focus:ring-1 focus:ring-[var(--accent)]"
               />
               <Button onClick={() => void copyAll()}>复制</Button>
-              <Button onClick={onClear}>清空</Button>
+              <Button variant="danger" onClick={onClear}>
+                清空
+              </Button>
             </>
           ) : null}
           <Button onClick={onToggleExpanded}>{expanded ? '折叠' : '展开'}</Button>

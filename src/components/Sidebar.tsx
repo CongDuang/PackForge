@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PAGE_IDS, PAGE_LABELS, type PageId } from '../navigation'
+import { PRODUCT_NAME } from '../shared/about'
 
 const SIDEBAR_COLLAPSED_KEY = 'packforge.sidebarCollapsed'
 
@@ -28,9 +29,13 @@ function NavIcon({ page }: { page: PageId }) {
   if (page === 'workbench') {
     return (
       <svg aria-hidden className={common} viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M3 10h18" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M8 14h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path
+          d="M3 8h18v3.2H3z"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <path d="M6 11.2V19M18 11.2V19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     )
   }
@@ -38,13 +43,23 @@ function NavIcon({ page }: { page: PageId }) {
     return (
       <svg aria-hidden className={common} viewBox="0 0 24 24" fill="none">
         <path
-          d="M9 4v7.5a3 3 0 1 0 6 0V4"
+          d="M5 9h10v5.5A3.5 3.5 0 0 1 11.5 18h-3A3.5 3.5 0 0 1 5 14.5V9z"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M15 11h1.6a2.2 2.2 0 0 1 0 4.4H15"
           stroke="currentColor"
           strokeWidth="1.6"
           strokeLinecap="round"
         />
-        <path d="M9 8h6M9 11h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        <path d="M7 20h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        <path
+          d="M8 5.4c.4.8.4 1.3 0 2.1M11 5.4c.4.8.4 1.3 0 2.1"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
       </svg>
     )
   }
@@ -52,10 +67,10 @@ function NavIcon({ page }: { page: PageId }) {
     <svg aria-hidden className={common} viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
       <path
-        d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
         stroke="currentColor"
         strokeWidth="1.6"
-        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )
@@ -105,8 +120,7 @@ export default function Sidebar({ current, onNavigate }: SidebarProps) {
         <BrandMark />
         {!collapsed ? (
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-[var(--text-primary)]">匠包</div>
-            <div className="truncate text-xs text-[var(--text-muted)]">PackForge</div>
+            <div className="truncate text-sm font-semibold text-[var(--text-primary)]">{PRODUCT_NAME}</div>
           </div>
         ) : null}
       </div>

@@ -1,6 +1,6 @@
 appId: com.packforge.app
-productName: PackForge
-copyright: Copyright © PackForge
+productName: 匠包
+copyright: Copyright © 匠包
 directories:
   output: release
   buildResources: resources

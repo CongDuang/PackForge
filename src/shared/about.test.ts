@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS } from './types.ts'
 
 describe('about copy', () => {
   it('keeps product name and slogan', () => {
-    assert.equal(PRODUCT_NAME, '匠包 PackForge')
+    assert.equal(PRODUCT_NAME, '匠包')
     assert.equal(PRODUCT_SLOGAN, '本地锻造，不上云')
   })
 

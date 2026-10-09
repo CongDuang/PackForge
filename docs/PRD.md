@@ -4,17 +4,19 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.8 |
+| 文档版本 | v1.10 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
 | 作者 | PackForge 产品设计 |
-| 最近更新 | 2026-10-08 |
+| 最近更新 | 2026-10-09 |
 
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.10 | 2026-10-09 | 当前界面与安装包名称改为「匠包」；英文名 PackForge 预留给后续国际化 |
+| v1.9 | 2026-10-09 | APK 产物可安装到已授权设备；同包名签名冲突时确认后卸载再装 |
 | v1.8 | 2026-10-08 | 打包前 `clean` 改为工作台勾选，偏好写入本地并记住；未勾选则不附加 clean |
 | v1.7 | 2026-09-08 | 变体动态发现与打包共用 resolveBuildEnv（应用内 JDK/SDK），避免正式包误走静态回退 |
 | v1.6 | 2026-09-08 | 产物分享仅保留「复制到文件夹」；不展示 output-metadata.json；开发者工具需特殊触发 |
@@ -209,10 +211,11 @@ android-packing-tools/
 
 | 用途 | 文案 |
 |------|------|
-| 产品全称 | 匠包 PackForge |
+| 产品全称 | 匠包（当前界面语言） |
 | 窗口标题 | 匠包 — 本地 Android 打包工作台 |
 | 简短口号 | 本地锻造，不上云 |
-| 安装包名 | PackForge / 匠包 |
+| 安装包名 | 匠包 |
+| 英文名 | PackForge（预留给后续国际化，当前界面不展示） |
 
 命名寓意：像工匠在本地工坊锻造安装包（APK/AAB），强调**手工可控、密封本地**，而非云端流水线。
 
@@ -539,9 +542,10 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 
 | 操作 | 行为 |
 |------|------|
-| 在访达/资源管理器中显示 | `shell.showItemInFolder` |
+| 在文件管理器中显示 | macOS 按钮为「在访达中显示」，Windows 为「在资源管理器中显示」；`shell.showItemInFolder` |
 | 复制文件到文件夹 | 选目标目录，将勾选文件 `copyFile` 过去；重名时追加时间戳 |
 | 全选 / 反选 | 多选辅助 |
+| 安装（仅 APK） | 用本机 SDK 的 `adb` 列出已授权设备并 `adb install -r`。可选安装前卸载同包名。若因签名不一致失败（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`），再确认是否只卸载该包名后重装。不卸载其他包名的应用 |
 
 **不做：** 复制路径到文本剪贴板、写入系统文件剪贴板、列表拖出。
 
@@ -552,6 +556,7 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 - 列表中不出现 `output-metadata.json`。
 - 复制到文件夹必须可用。
 - 多选 2 个以上文件复制到新文件夹后，目标目录文件齐全且校验大小一致。
+- 仅 APK 行有「安装」。无设备时不能安装。签名冲突时选「否」不卸载；选「是」只卸载该包名再安装。未找到 adb 时给出明确错误。
 
 ---
 
@@ -642,6 +647,8 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 | `E_BUILD_CANCELLED` | 用户取消 | 可重新打包 |
 | `E_ARTIFACT_NONE` | 构建成功但未扫到产物 | 检查模块路径与变体是否匹配 |
 | `E_COPY_FAILED` | 复制到目标文件夹失败 | 权限/磁盘空间/路径无效 |
+| `E_INSTALL_FAILED` | adb 安装或列设备失败 | 确认 SDK、USB 调试与设备授权 |
+| `E_INSTALL_CONFLICT` | 同包名签名不一致 | 可选择卸载该包名后重新安装 |
 
 ---
 
@@ -711,7 +718,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 6. **SDK：** 只读检测，设置可覆盖。  
 7. **产物分享：** 复制到文件夹；**不做**拖出、复制路径、文件剪贴板。列表仅 APK / AAB / `mapping.txt`。
 8. **隐私：** 零遥测；MVP 默认无出站网络。  
-9. **品牌：** 匠包 PackForge；深色工坊 + 密封箱/盾牌 + Android 绿。
+9. **品牌：** 当前界面名「匠包」；英文名 PackForge 预留给后续国际化。深色工坊 + 密封箱/盾牌 + Android 绿。
 10. **开发拆分：** 实现按 `features/F01`…`F14` 顺序执行；完成后自动 commit-and-push。
 
 ---

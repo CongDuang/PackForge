@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import type { ArtifactItem } from '../shared/types'
 import Button from './ui/Button'
 
+const revealLabel = /Windows/i.test(navigator.userAgent) ? '在资源管理器中显示' : '在访达中显示'
+
 function formatSize(size: number): string {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
@@ -20,6 +22,7 @@ type ArtifactsPanelProps = {
   onRefresh: () => void
   onCopyToFolder: () => void
   onReveal: (path: string) => void
+  onInstall: (path: string) => void
 }
 
 export default function ArtifactsPanel({
@@ -34,6 +37,7 @@ export default function ArtifactsPanel({
   onRefresh,
   onCopyToFolder,
   onReveal,
+  onInstall,
 }: ArtifactsPanelProps) {
   const selected = useMemo(() => new Set(selectedPaths), [selectedPaths])
 
@@ -120,16 +124,31 @@ export default function ArtifactsPanel({
                 <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
                   {formatSize(item.size)} · {new Date(item.mtime).toLocaleString()}
                 </p>
-                <button
-                  type="button"
-                  className="mt-1 text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    onReveal(item.path)
-                  }}
-                >
-                  在访达/资源管理器中显示
-                </button>
+                <div className="mt-1 flex gap-3">
+                  {item.type === 'apk' ? (
+                    <button
+                      type="button"
+                      className="text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onInstall(item.path)
+                      }}
+                    >
+                      安装
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onReveal(item.path)
+                    }}
+                  >
+                    {revealLabel}
+                  </button>
+                </div>
               </div>
             </label>
           ))

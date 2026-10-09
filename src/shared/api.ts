@@ -95,4 +95,22 @@ export type PackforgeApi = {
   showItemInFolder: (path: string) => Promise<Result<void>>
   /** 切换开发者工具（特殊触发；dev / 正式包均可用） */
   toggleDevTools: () => Promise<Result<void>>
+  listAdbDevices: (
+    projectPath: string,
+  ) => Promise<Result<{ devices: AdbDevice[]; aaptAvailable: boolean }>>
+  installApk: (input: InstallApkInput) => Promise<Result<{ packageName: string | null }>>
+}
+
+export type AdbDevice = {
+  serial: string
+  model?: string
+}
+
+export type InstallApkInput = {
+  apkPath: string
+  serial: string
+  uninstallSamePackageFirst: boolean
+  projectPath: string
+  /** 冲突回退时由上次错误带入，避免再依赖 aapt */
+  packageName?: string
 }

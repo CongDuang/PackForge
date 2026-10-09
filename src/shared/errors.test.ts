@@ -14,6 +14,8 @@ const required = [
   'E_BUILD_CANCELLED',
   'E_ARTIFACT_NONE',
   'E_COPY_FAILED',
+  'E_INSTALL_FAILED',
+  'E_INSTALL_CONFLICT',
 ] as const
 
 test('PRD §15 错误码全部导出', () => {

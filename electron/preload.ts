@@ -63,6 +63,8 @@ const api: PackforgeApi = {
   copyArtifactsToFolder: (paths, targetDir) => invoke('copyArtifactsToFolder', paths, targetDir),
   showItemInFolder: (path) => invoke('showItemInFolder', path),
   toggleDevTools: () => invoke('toggleDevTools'),
+  listAdbDevices: (projectPath) => invoke('listAdbDevices', projectPath),
+  installApk: (input) => invoke('installApk', input),
 }
 
 contextBridge.exposeInMainWorld('packforge', api)

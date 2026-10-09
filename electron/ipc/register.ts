@@ -18,6 +18,7 @@ import {
   parseProjectSigningInput,
   upsertProjectSigning,
 } from '../services/signing'
+import { installApk as installApkOnDevice, listAdbDevices as queryAdbDevices } from '../services/adbInstall'
 import { resolveBuildEnv } from '../services/env'
 import { cancelBuild, startBuild } from '../services/buildRunner'
 import {
@@ -158,6 +159,33 @@ const handlers: Record<InvokeMethod, Handler> = {
     if (!win) return err(appError('E_COPY_FAILED', '没有可调试的窗口'))
     win.webContents.toggleDevTools()
     return ok(undefined)
+  },
+  listAdbDevices: async (projectPath) => {
+    const settings = await getSettingsFromStore()
+    const listed = await queryAdbDevices({
+      projectPath: String(projectPath ?? ''),
+      settingsAndroidSdkPath: settings.androidSdkPath,
+    })
+    if (!listed.ok) return listed
+    return ok(listed.data)
+  },
+  installApk: async (input) => {
+    const body = (input ?? {}) as {
+      apkPath?: string
+      serial?: string
+      uninstallSamePackageFirst?: boolean
+      projectPath?: string
+      packageName?: string
+    }
+    const settings = await getSettingsFromStore()
+    return installApkOnDevice({
+      apkPath: String(body.apkPath ?? ''),
+      serial: String(body.serial ?? ''),
+      uninstallSamePackageFirst: body.uninstallSamePackageFirst === true,
+      projectPath: String(body.projectPath ?? ''),
+      settingsAndroidSdkPath: settings.androidSdkPath,
+      packageName: body.packageName ? String(body.packageName) : undefined,
+    })
   },
 }
 

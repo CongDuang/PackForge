@@ -1,8 +1,8 @@
 {
   "name": "packforge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "匠包 PackForge — 本地 Android Gradle 打包工作台",
+  "description": "匠包 — 本地 Android Gradle 打包工作台",
   "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "node scripts/dev.mjs",
@@ -16,10 +16,10 @@
     "dist:mac": "pnpm run build && electron-builder --config electron-builder.yml --mac",
     "dist:win": "pnpm run build && electron-builder --config electron-builder.yml --win"
   },
-  "packageManager": "pnpm@11.21.0",
+  "packageManager": "pnpm@12.9.1",
   "engines": {
     "node": ">=20",
-    "pnpm": ">=9"
+    "pnpm": ">=12.9.1"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
@@ -43,5 +43,5 @@
     "vite": "^6.0.3",
     "electron-builder": "^26.15.3"
   },
-  "author": "PackForge"
+  "author": "匠包"
 }

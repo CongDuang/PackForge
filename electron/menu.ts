@@ -3,7 +3,7 @@ import { PRODUCT_NAME, PRODUCT_SLOGAN, PRIVACY_POINTS } from '../src/shared/abou
 import { EVENT_CHANNELS } from '../src/shared/channels.ts'
 import { getRecentProjects } from './services/store.ts'
 
-const APP_MENU_NAME = 'PackForge'
+const APP_MENU_NAME = PRODUCT_NAME
 
 function focusedWindow(): BrowserWindow | null {
   return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null

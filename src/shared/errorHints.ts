@@ -13,6 +13,8 @@ export const ERROR_HINTS: Record<PackForgeErrorCode, string> = {
   E_BUILD_CANCELLED: '可重新打包',
   E_ARTIFACT_NONE: '检查模块路径与变体是否匹配',
   E_COPY_FAILED: '检查权限、磁盘空间与目标路径',
+  E_INSTALL_FAILED: '确认已配置 Android SDK，设备已打开 USB 调试并授权本机',
+  E_INSTALL_CONFLICT: '设备上已有同包名应用且签名不一致，可选择卸载后重新安装',
   E_NOT_IMPLEMENTED: '该能力尚未实现',
 }
 

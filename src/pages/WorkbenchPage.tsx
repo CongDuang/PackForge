@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import ApkInstallDialog from '../components/ApkInstallDialog'
 import ArtifactsPanel from '../components/ArtifactsPanel'
 import BuildLogPanel, { type LogLine } from '../components/BuildLogPanel'
 import JdkSelect from '../components/JdkSelect'
@@ -63,6 +64,7 @@ export default function WorkbenchPage() {
   const rootRef = useRef<HTMLDivElement>(null)
   const signingIntentRef = useRef(0)
   const [maxLogHeight, setMaxLogHeight] = useState(DEFAULT_LOG_HEIGHT * 2)
+  const [installApkPath, setInstallApkPath] = useState<string | null>(null)
 
   useEffect(() => {
     const el = rootRef.current
@@ -608,6 +610,7 @@ export default function WorkbenchPage() {
             onRefresh={() => void refreshArtifacts()}
             onCopyToFolder={() => void copyToFolder()}
             onReveal={(p) => void reveal(p)}
+            onInstall={(p) => setInstallApkPath(p)}
           />
         ) : null}
       </div>
@@ -625,6 +628,17 @@ export default function WorkbenchPage() {
           logBufferRef.current = []
         }}
       />
+      {installApkPath && project ? (
+        <ApkInstallDialog
+          apkPath={installApkPath}
+          projectPath={project.path}
+          onClose={() => setInstallApkPath(null)}
+          onInstalled={(serial) => {
+            setInstallApkPath(null)
+            useWorkbenchStore.getState().setBanner(`已安装到 ${serial}`)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

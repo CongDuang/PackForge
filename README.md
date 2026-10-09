@@ -48,7 +48,7 @@ pnpm build      # 编译渲染进程与主进程
 
 ## 打包发布
 
-配置见 [electron-builder.yml](electron-builder.yml)：`appId=com.packforge.app`，`productName=PackForge`（界面中文名仍为匠包）。图标在 `resources/icon.{png,icns,ico}`。
+配置见 [electron-builder.yml](electron-builder.yml)：`appId=com.packforge.app`，安装包与界面名称为「匠包」（英文名 PackForge 预留给后续国际化）。图标在 `resources/icon.{png,icns,ico}`。
 
 ```bash
 pnpm dist        # 当前 OS：先 build 再 electron-builder
