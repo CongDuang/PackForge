@@ -1,6 +1,8 @@
 packages:
   - '.'
 allowBuilds:
+  # pnpm 12 的安装脚本会把 @pnpm/exe.<平台> 链成可执行文件；不放行时钉版本会报找不到原生二进制
+  pnpm: true
   electron: true
   esbuild: true
   keytar: true

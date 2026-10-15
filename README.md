@@ -44,7 +44,7 @@ pnpm build      # 编译渲染进程与主进程
 
 `keytar` 是原生模块，必须针对 Electron 的 Node ABI 重建。若保存签名时报钥匙串写入失败，先执行 `pnpm rebuild`。
 
-本仓库用 `pnpm-workspace.yaml` 的 `allowBuilds` 允许 `electron` / `esbuild` / `keytar` 等安装脚本；`electron-winstaller` 默认关闭（Windows 安装器脚本，仅在需要时再打开）。
+本仓库用 `pnpm-workspace.yaml` 的 `allowBuilds` 允许 `pnpm` / `electron` / `esbuild` / `keytar` 等安装脚本；`electron-winstaller` 默认关闭（Windows 安装器脚本，仅在需要时再打开）。
 
 ## 打包发布
 

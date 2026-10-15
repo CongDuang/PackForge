@@ -41,6 +41,7 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  if (process.platform === 'win32') app.setAppUserModelId('com.packforge.app')
   configureAppIdentity()
   installApplicationMenu()
   registerIpcHandlers()

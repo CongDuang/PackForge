@@ -4,17 +4,19 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.10 |
+| 文档版本 | v1.12 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
 | 作者 | PackForge 产品设计 |
-| 最近更新 | 2026-10-09 |
+| 最近更新 | 2026-10-15 |
 
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.12 | 2026-10-15 | Gradle User Home 优先用环境变量 GRADLE_USER_HOME，未设置则用默认目录，不追加 -g |
+| v1.11 | 2026-10-15 | 打包成功或失败弹出系统通知；点击通知打开客户端并展开产物 |
 | v1.10 | 2026-10-09 | 当前界面与安装包名称改为「匠包」；英文名 PackForge 预留给后续国际化 |
 | v1.9 | 2026-10-09 | APK 产物可安装到已授权设备；同包名签名冲突时确认后卸载再装 |
 | v1.8 | 2026-10-08 | 打包前 `clean` 改为工作台勾选，偏好写入本地并记住；未勾选则不附加 clean |
@@ -415,6 +417,7 @@ android-packing-tools/
 - `cwd` 为项目 Wrapper 所在目录。
 - 工作台提供「打包前 clean」勾选。勾选时与目标任务同一 Wrapper 调用：`gradlew clean <task> …`；未勾选则不附加 `clean`。勾选状态写入本地并在下次启动时恢复（默认勾选）。
 - 合并环境：`JAVA_HOME`、`ANDROID_HOME`/`ANDROID_SDK_ROOT`（见 FR-08）、原有 `PATH`。
+- Gradle User Home：进程环境里有非空 `GRADLE_USER_HOME` 时传给 Wrapper；没有则不设置该变量，也不往命令行追加 `--gradle-user-home` 或 `-g`，由 Gradle 使用默认目录（macOS `~/.gradle`，Windows `%USERPROFILE%\.gradle`）。
 - stdout/stderr 流式推送到 UI；支持清空、搜索、复制全部日志（已脱敏）。
 - 取消：向进程树发送终止信号（Windows 需注意 `taskkill` / 杀进程树策略）。
 
@@ -424,6 +427,8 @@ android-packing-tools/
 - 取消后进程结束，状态变为「已取消」，不误报成功。
 - 退出码非 0 时展示失败摘要 + 错误码 `E_BUILD_FAILED`。
 - 勾选 clean 时，日志命令预览可见先执行 `clean`；未勾选时预览不含 `clean`。
+- 构建成功或失败（用户取消不通知）弹出系统通知。正文为 `{rootProject.name} apk 打包成功` 或 `{rootProject.name} apk 打包失败`。`rootProject.name` 读工程 `settings.gradle(.kts)`；读不到时用工程目录名。
+- 点击通知将窗口置于前台并切到工作台。产物面板未展开时自动展开。
 
 ### FR-07 产物发现与复制分享（P0）
 

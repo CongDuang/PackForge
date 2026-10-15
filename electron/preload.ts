@@ -7,6 +7,11 @@ function invoke<T>(method: (typeof INVOKE_METHODS)[number], ...args: unknown[]):
   return ipcRenderer.invoke(invokeChannel(method), ...args) as Promise<Result<T>>
 }
 
+let pendingBuildNotificationClick = false
+ipcRenderer.on(EVENT_CHANNELS.buildNotificationClick, () => {
+  pendingBuildNotificationClick = true
+})
+
 const api: PackforgeApi = {
   getSettings: () => invoke('getSettings'),
   setSettings: (partial) => invoke('setSettings', partial),
@@ -57,6 +62,17 @@ const api: PackforgeApi = {
     ipcRenderer.on(EVENT_CHANNELS.menuOpenRecent, listener)
     return () => {
       ipcRenderer.removeListener(EVENT_CHANNELS.menuOpenRecent, listener)
+    }
+  },
+  onBuildNotificationClick: (cb) => {
+    const listener = () => {
+      pendingBuildNotificationClick = false
+      cb()
+    }
+    if (pendingBuildNotificationClick) listener()
+    ipcRenderer.on(EVENT_CHANNELS.buildNotificationClick, listener)
+    return () => {
+      ipcRenderer.removeListener(EVENT_CHANNELS.buildNotificationClick, listener)
     }
   },
   scanArtifacts: (input) => invoke('scanArtifacts', input),

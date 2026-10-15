@@ -1,6 +1,26 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { parseSettingsIncludes, pickDefaultModule } from './parseSettings.ts'
+import {
+  buildNotificationBody,
+  parseRootProjectName,
+  parseSettingsIncludes,
+  pickDefaultModule,
+} from './parseSettings.ts'
+
+describe('parseRootProjectName', () => {
+  it('reads quoted rootProject.name and ignores comments', () => {
+    assert.equal(parseRootProjectName(`// rootProject.name = "nope"\nrootProject.name = 'demo'`), 'demo')
+    assert.equal(parseRootProjectName(`rootProject.name = "My App"`), 'My App')
+    assert.equal(parseRootProjectName(`include ':app'`), null)
+  })
+})
+
+describe('buildNotificationBody', () => {
+  it('formats success and failure', () => {
+    assert.equal(buildNotificationBody('demo', true), 'demo apk 打包成功')
+    assert.equal(buildNotificationBody('demo', false), 'demo apk 打包失败')
+  })
+})
 
 describe('parseSettingsIncludes', () => {
   it('parses groovy multi include on one line', () => {

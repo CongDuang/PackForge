@@ -6,6 +6,17 @@ export type ParsedModules = {
 
 const IGNORED_BLOCKS = ['pluginManagement', 'dependencyResolutionManagement'] as const
 
+/** 读 `rootProject.name = '...'`。读不到时返回 null。 */
+export function parseRootProjectName(source: string): string | null {
+  const match = /\brootProject\.name\s*=\s*(['"])([^'"]*)\1/.exec(stripComments(source))
+  const name = match?.[2]?.trim()
+  return name ? name : null
+}
+
+export function buildNotificationBody(rootProjectName: string, succeeded: boolean): string {
+  return `${rootProjectName} apk 打包${succeeded ? '成功' : '失败'}`
+}
+
 export function parseSettingsIncludes(source: string): ParsedModules {
   const scanned = stripIgnoredBlocks(stripComments(source))
   const modules = unique(extractIncludeNames(scanned).map(normalizeModule).filter(Boolean))

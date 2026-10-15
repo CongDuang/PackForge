@@ -168,6 +168,23 @@ export function resolveJavaHomeForBuild(
   return err(appError('E_NO_JDK', '未选择有效 JDK'))
 }
 
+/** 有非空 GRADLE_USER_HOME 就用它；否则不传该变量，让 Gradle 用默认目录。不追加 -g。 */
+export function gradleUserHomeFromEnv(processEnv: NodeJS.ProcessEnv): string | null {
+  const value = (processEnv.GRADLE_USER_HOME || '').trim()
+  return value || null
+}
+
+export function withGradleUserHome(
+  base: NodeJS.ProcessEnv,
+  overlay: Record<string, string>,
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...base, ...overlay }
+  const home = gradleUserHomeFromEnv(base) ?? gradleUserHomeFromEnv(overlay)
+  if (home) env.GRADLE_USER_HOME = home
+  else delete env.GRADLE_USER_HOME
+  return env
+}
+
 export function prependJavaBinToPath(
   javaHome: string,
   currentPath: string | undefined,
@@ -228,6 +245,13 @@ export function resolveBuildEnv(
     ANDROID_HOME: sdk.data.androidHome,
     ANDROID_SDK_ROOT: sdk.data.androidHome,
     PATH: pathValue,
+  }
+  const gradleUserHome = gradleUserHomeFromEnv(processEnv)
+  if (gradleUserHome) {
+    env.GRADLE_USER_HOME = gradleUserHome
+    diagnosis.push(`使用环境变量 GRADLE_USER_HOME：${gradleUserHome}`)
+  } else {
+    diagnosis.push('未设置 GRADLE_USER_HOME，使用 Gradle 默认目录')
   }
 
   return ok({

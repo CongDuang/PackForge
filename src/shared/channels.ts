@@ -44,4 +44,5 @@ export const EVENT_CHANNELS = {
   buildStatus: `${PACKFORGE_CHANNEL_PREFIX}buildStatus`,
   menuPickProject: `${PACKFORGE_CHANNEL_PREFIX}menuPickProject`,
   menuOpenRecent: `${PACKFORGE_CHANNEL_PREFIX}menuOpenRecent`,
+  buildNotificationClick: `${PACKFORGE_CHANNEL_PREFIX}buildNotificationClick`,
 } as const

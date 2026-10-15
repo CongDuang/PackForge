@@ -47,9 +47,15 @@ export default function AppShell() {
       void openPath(projectPath)
     })
 
+    const offBuildNotice = api.onBuildNotificationClick(() => {
+      setPage('workbench')
+      useWorkbenchStore.getState().setArtifactsExpanded(true)
+    })
+
     return () => {
       offPick()
       offRecent()
+      offBuildNotice()
     }
   }, [])
 

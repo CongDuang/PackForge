@@ -10,6 +10,7 @@ import {
   resolveBuildEnv,
   resolveJavaHomeForBuild,
   unescapeSdkDir,
+  withGradleUserHome,
 } from './env.ts'
 
 const fixtures: string[] = []
@@ -214,6 +215,38 @@ describe('resolveBuildEnv', () => {
     assert.equal(result.data.env.ANDROID_HOME, path.resolve(sdk))
     assert.equal(result.data.env.ANDROID_SDK_ROOT, path.resolve(sdk))
     assert.ok(result.data.env.PATH.startsWith(path.join(path.resolve(jdk), 'bin')))
+    assert.equal(result.data.env.GRADLE_USER_HOME, undefined)
+    assert.ok(result.data.diagnosis.some((line) => line.includes('未设置 GRADLE_USER_HOME')))
+  })
+
+  it('passes GRADLE_USER_HOME through and does not invent a default path', () => {
+    const sdk = makeDir('gradle-home-sdk')
+    const jdk = makeDir('gradle-home-jdk')
+    touchJava(jdk)
+    const result = resolveBuildEnv(
+      { projectPath: makeDir('gradle-home-project'), jdkId: jdk },
+      {
+        settingsAndroidSdkPath: sdk,
+        allowSystemJdkFallback: false,
+        processEnv: { PATH: '/usr/bin', GRADLE_USER_HOME: ' /opt/gradle-user ' },
+        platform: 'darwin',
+        jdkInstalls: [{ id: jdk, homePath: jdk }],
+        readLocalProperties: () => null,
+      },
+    )
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.equal(result.data.env.GRADLE_USER_HOME, '/opt/gradle-user')
+  })
+
+  it('drops an empty GRADLE_USER_HOME so Gradle keeps its default directory', () => {
+    const env = withGradleUserHome(
+      { GRADLE_USER_HOME: '   ', PATH: '/usr/bin' },
+      { JAVA_HOME: '/jdk' },
+    )
+    assert.equal(env.GRADLE_USER_HOME, undefined)
+    assert.equal(env.JAVA_HOME, '/jdk')
+    assert.equal(env.PATH, '/usr/bin')
   })
 
   it('returns E_NO_SDK when sdk missing', () => {

@@ -1,15 +1,17 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { appendFileSync, mkdirSync } from 'node:fs'
+import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { BrowserWindow, app } from 'electron'
+import { app, BrowserWindow, Notification } from 'electron'
+import { PRODUCT_NAME } from '../../src/shared/about.ts'
 import { appError } from '../../src/shared/errors.ts'
 import { EVENT_CHANNELS } from '../../src/shared/channels.ts'
+import { buildNotificationBody, parseRootProjectName } from '../../src/shared/parseSettings.ts'
 import { err, ok, type Result } from '../../src/shared/result.ts'
 import { buildGradleTaskName } from '../../src/shared/taskName.ts'
-import type { BuildLogEvent, BuildRequest, BuildStatusEvent } from '../../src/shared/types.ts'
+import type { BuildLogEvent, BuildRequest, BuildStatusEvent, ProjectValidation } from '../../src/shared/types.ts'
 import { parseBuildRequest, redactSecrets, secretsFromSigningArgs, splitGradleArgs } from './buildArgs.ts'
-import { resolveBuildEnv } from './env.ts'
+import { resolveBuildEnv, withGradleUserHome } from './env.ts'
 import { validateProject } from './project.ts'
 import { buildSigningInjectArgs } from './signing.ts'
 import { getJdkState, getSettingsFromStore } from './store.ts'
@@ -20,6 +22,8 @@ const KILL_TIMEOUT_MS = 8_000
 type ActiveBuild = {
   buildId: string
   taskName: string
+  projectPath: string
+  settingsFile: ProjectValidation['settingsFile']
   child: ChildProcess
   secrets: string[]
   cancelled: boolean
@@ -43,6 +47,44 @@ function emitLog(event: BuildLogEvent): void {
 
 function emitStatus(event: BuildStatusEvent): void {
   broadcast(EVENT_CHANNELS.buildStatus, event)
+}
+
+function rootProjectLabel(projectPath: string, settingsFile: ProjectValidation['settingsFile']): string {
+  try {
+    const text = readFileSync(path.join(projectPath, settingsFile), 'utf8')
+    return parseRootProjectName(text) ?? path.basename(projectPath)
+  } catch {
+    return path.basename(projectPath)
+  }
+}
+
+function revealApp(): void {
+  let win =
+    BrowserWindow.getFocusedWindow() ??
+    BrowserWindow.getAllWindows().find((item) => !item.isDestroyed())
+  if (!win) {
+    app.emit('activate')
+    win = BrowserWindow.getAllWindows().find((item) => !item.isDestroyed())
+  }
+  if (!win) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+  app.focus({ steal: true })
+  const send = () => broadcast(EVENT_CHANNELS.buildNotificationClick, null)
+  if (win.webContents.isLoading()) win.webContents.once('did-finish-load', send)
+  else send()
+}
+
+function notifyBuildOutcome(build: ActiveBuild, succeeded: boolean): void {
+  if (!Notification.isSupported()) return
+  const body = buildNotificationBody(
+    rootProjectLabel(build.projectPath, build.settingsFile),
+    succeeded,
+  )
+  const note = new Notification({ title: PRODUCT_NAME, body })
+  note.on('click', () => revealApp())
+  note.show()
 }
 
 function appendRing(build: ActiveBuild, line: string): void {
@@ -167,7 +209,7 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
   ]
 
   const buildId = randomUUID()
-  const env = { ...process.env, ...envResult.data.env }
+  const env = withGradleUserHome(process.env, envResult.data.env)
 
   const child = spawn(validated.data.wrapperCommand, args, {
     cwd: validated.data.path,
@@ -180,6 +222,8 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
   const build: ActiveBuild = {
     buildId,
     taskName,
+    projectPath: validated.data.path,
+    settingsFile: validated.data.settingsFile,
     child,
     secrets,
     cancelled: false,
@@ -211,6 +255,7 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
       taskName,
       error: appError('E_BUILD_FAILED', '构建失败', message),
     })
+    notifyBuildOutcome(build, false)
   })
 
   child.on('close', (code) => {
@@ -233,6 +278,7 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
 
     if (code === 0) {
       emitStatus({ buildId, status: 'succeeded', exitCode: 0, taskName })
+      notifyBuildOutcome(build, true)
       return
     }
 
@@ -243,6 +289,7 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
       taskName,
       error: appError('E_BUILD_FAILED', '构建失败', `exitCode=${code ?? 'null'}`),
     })
+    notifyBuildOutcome(build, false)
   })
 
   return ok({ buildId })

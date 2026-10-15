@@ -11,7 +11,7 @@ import {
 import { err, ok, type Result } from '../../src/shared/result.ts'
 import { buildGradleTaskName } from '../../src/shared/taskName.ts'
 import type { BuildKind, BuildRequest, VariantDiscovery } from '../../src/shared/types.ts'
-import { resolveBuildEnv } from './env.ts'
+import { resolveBuildEnv, withGradleUserHome } from './env.ts'
 import { validateProject } from './project.ts'
 import { getJdkState, getSettingsFromStore } from './store.ts'
 
@@ -172,7 +172,7 @@ function runWrapperTasks(
     const args = [`:${module}:tasks`, '--all']
     const child = spawn(wrapperCommand, args, {
       cwd,
-      env: { ...process.env, ...buildEnv },
+      env: withGradleUserHome(process.env, buildEnv),
       windowsHide: true,
       shell: process.platform === 'win32',
     })

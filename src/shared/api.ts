@@ -87,6 +87,8 @@ export type PackforgeApi = {
   onBuildStatus: (cb: (e: BuildStatusEvent) => void) => () => void
   onMenuPickProject: (cb: () => void) => () => void
   onMenuOpenRecent: (cb: (projectPath: string) => void) => () => void
+  /** 点击构建结果的系统通知 */
+  onBuildNotificationClick: (cb: () => void) => () => void
   scanArtifacts: (input: ScanArtifactsInput) => Promise<Result<{ items: ArtifactItem[] }>>
   copyArtifactsToFolder: (
     paths: string[],
