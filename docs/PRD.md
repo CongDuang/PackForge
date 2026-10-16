@@ -4,17 +4,19 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.12 |
+| 文档版本 | v1.14 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
 | 作者 | PackForge 产品设计 |
-| 最近更新 | 2026-10-15 |
+| 最近更新 | 2026-10-16 |
 
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.14 | 2026-10-16 | 变体动态发现默认 30 秒超时，可在设置中修改；刷新时显示倒计时，可改用脚本解析 |
+| v1.13 | 2026-10-16 | 从访达启动时用登录 shell 补读 GRADLE_USER_HOME，问到才传给 Gradle |
 | v1.12 | 2026-10-15 | Gradle User Home 优先用环境变量 GRADLE_USER_HOME，未设置则用默认目录，不追加 -g |
 | v1.11 | 2026-10-15 | 打包成功或失败弹出系统通知；点击通知打开客户端并展开产物 |
 | v1.10 | 2026-10-09 | 当前界面与安装包名称改为「匠包」；英文名 PackForge 预留给后续国际化 |
@@ -337,12 +339,14 @@ android-packing-tools/
 - Build Type：如下拉或从任务反推列表（如 `Debug`、`Release`）。
 - Flavor：按维度展示；多维度时用户为每个维度选一个 flavor，再拼接（如 `Prod` + `Store` → `ProdStore`）。
 - 实时预览将执行的任务名，例如 `:app:bundleProdRelease`。
+- 动态发现超时默认 30 秒，可在设置中改为 5–300 秒。刷新进行中在按钮后显示剩余秒数。
+- 「改用脚本」停掉当前 `gradlew tasks`，改为读取该模块的 `build.gradle` / `build.gradle.kts`。
 
 **AC：**
 
 - 能生成并执行等价于 `bundleProdRelease`、`assembleProdRelease`、`bundleDevDebug`、`assembleDevDebug` 的任务。
 - 无 flavor 时任务为 `assembleRelease` / `bundleRelease` 等形式。
-- 动态发现失败时自动尝试静态回退，并在 UI 标注「回退解析，请核对」及失败原因摘要。
+- 动态发现失败、超时或用户改用脚本时尝试静态回退，并在 UI 标注「回退解析，请核对」及原因摘要。用户主动改用脚本时摘要为「已取消动态发现」。
 - 正式包从访达启动时，只要应用内已配置 JDK/SDK，动态发现应能与终端 `pnpm dev` 一样成功（不依赖 GUI 进程自带的 JAVA_HOME）。
 
 ### FR-04 JDK 导入与选择（P0）
@@ -417,7 +421,7 @@ android-packing-tools/
 - `cwd` 为项目 Wrapper 所在目录。
 - 工作台提供「打包前 clean」勾选。勾选时与目标任务同一 Wrapper 调用：`gradlew clean <task> …`；未勾选则不附加 `clean`。勾选状态写入本地并在下次启动时恢复（默认勾选）。
 - 合并环境：`JAVA_HOME`、`ANDROID_HOME`/`ANDROID_SDK_ROOT`（见 FR-08）、原有 `PATH`。
-- Gradle User Home：进程环境里有非空 `GRADLE_USER_HOME` 时传给 Wrapper；没有则不设置该变量，也不往命令行追加 `--gradle-user-home` 或 `-g`，由 Gradle 使用默认目录（macOS `~/.gradle`，Windows `%USERPROFILE%\.gradle`）。
+- Gradle User Home：进程环境里有非空 `GRADLE_USER_HOME` 时传给 Wrapper；没有则不设置该变量，也不往命令行追加 `--gradle-user-home` 或 `-g`，由 Gradle 使用默认目录（macOS `~/.gradle`，Windows `%USERPROFILE%\.gradle`）。macOS / Linux 从访达或应用菜单启动时，进程拿不到 shell 配置里的变量，启动时用登录 shell 询问一次 `GRADLE_USER_HOME`，问到就写入本进程环境。Windows 只用进程已有的用户环境变量。
 - stdout/stderr 流式推送到 UI；支持清空、搜索、复制全部日志（已脱敏）。
 - 取消：向进程树发送终止信号（Windows 需注意 `taskkill` / 杀进程树策略）。
 

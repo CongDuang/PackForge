@@ -9,7 +9,7 @@ import {
   upsertRecentProject,
   validateProject,
 } from '../services/project'
-import { discoverVariants, isBuildKind, previewTaskName } from '../services/variants'
+import { cancelVariantDiscovery, discoverVariants, isBuildKind, previewTaskName } from '../services/variants'
 import { importJdk, listJdks, removeJdk, setDefaultJdk } from '../services/jdk'
 import {
   buildSigningInjectArgs,
@@ -105,6 +105,7 @@ const handlers: Record<InvokeMethod, Handler> = {
       String(module ?? ''),
       jdkId == null || jdkId === '' ? null : String(jdkId),
     ),
+  cancelVariantDiscovery: () => cancelVariantDiscovery(),
   previewTaskName: (req) => {
     const body = (req ?? {}) as Record<string, unknown>
     return previewTaskName({

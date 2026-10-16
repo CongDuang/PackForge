@@ -3,7 +3,7 @@ import Button from '../components/ui/Button'
 import TextField from '../components/ui/TextField'
 import Toggle from '../components/ui/Toggle'
 import { PRIVACY_POINTS, PRODUCT_NAME, PRODUCT_SLOGAN } from '../shared/about'
-import type { AppSettings, ThemePreference } from '../shared/types'
+import { clampVariantDiscoverTimeoutSec, type AppSettings, type ThemePreference } from '../shared/types'
 import { notifyThemeChanged } from '../theme'
 
 const SAVE_DEBOUNCE_MS = 400
@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [sdkPath, setSdkPath] = useState('')
   const [allowFallback, setAllowFallback] = useState(false)
   const [gradleArgs, setGradleArgs] = useState('')
+  const [variantTimeout, setVariantTimeout] = useState('30')
   const [theme, setTheme] = useState<ThemePreference>('system')
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const versionClickRef = useRef({ count: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined })
@@ -115,6 +116,7 @@ export default function SettingsPage() {
       setSdkPath(result.data.androidSdkPath)
       setAllowFallback(result.data.allowSystemJdkFallback)
       setGradleArgs(result.data.advancedGradleArgs)
+      setVariantTimeout(String(result.data.variantDiscoverTimeoutSec ?? 30))
       setTheme(result.data.theme ?? 'system')
     })
     void refreshEnvDiag()
@@ -312,6 +314,26 @@ export default function SettingsPage() {
             优先使用上方 SDK 路径；其次环境变量；再次最近工程的 local.properties（只读）。
           </p>
         </div>
+        <TextField
+          id="variant-discover-timeout"
+          label="变体发现超时（秒）"
+          type="number"
+          value={variantTimeout}
+          placeholder="30"
+          hint="刷新变体时等待 gradlew tasks 的最长时间，5–300 秒。到时或点「改用脚本」则改读模块的 build.gradle。"
+          onChange={(value) => {
+            setVariantTimeout(value)
+            const sec = Number(value.trim())
+            if (!Number.isInteger(sec) || sec < 5 || sec > 300) return
+            persistSoon({ variantDiscoverTimeoutSec: sec })
+          }}
+          onBlur={() => {
+            const sec = clampVariantDiscoverTimeoutSec(variantTimeout)
+            setVariantTimeout(String(sec))
+            flushPending()
+            void persist({ variantDiscoverTimeoutSec: sec })
+          }}
+        />
         <TextField
           id="advanced-gradle-args"
           label="高级 Gradle 参数"

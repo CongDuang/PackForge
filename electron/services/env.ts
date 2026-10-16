@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { appError } from '../../src/shared/errors.ts'
@@ -168,10 +169,73 @@ export function resolveJavaHomeForBuild(
   return err(appError('E_NO_JDK', '未选择有效 JDK'))
 }
 
+const GRADLE_USER_HOME_MARKER = '__PF_GUH__'
+const LOGIN_SHELL_TIMEOUT_MS = 8_000
+
 /** 有非空 GRADLE_USER_HOME 就用它；否则不传该变量，让 Gradle 用默认目录。不追加 -g。 */
 export function gradleUserHomeFromEnv(processEnv: NodeJS.ProcessEnv): string | null {
   const value = (processEnv.GRADLE_USER_HOME || '').trim()
   return value || null
+}
+
+/** 从登录 shell 的输出里取出 GRADLE_USER_HOME。shell 配置打印的杂讯在标记之前或下一行。 */
+export function parseShellGradleUserHome(output: string): string | null {
+  const idx = output.lastIndexOf(GRADLE_USER_HOME_MARKER)
+  if (idx < 0) return null
+  const value = output.slice(idx + GRADLE_USER_HOME_MARKER.length).split(/\r?\n/, 1)[0]?.trim() ?? ''
+  return value || null
+}
+
+/** Windows 图形进程已带上用户环境变量。macOS / Linux 从访达启动时没有 ~/.zshrc，要问登录 shell。 */
+export function loginShellBin(platform: NodeJS.Platform, shell: string | undefined): string | null {
+  if (platform === 'win32') return null
+  const candidate = (shell || '').trim()
+  const base = path.basename(candidate)
+  if ((base === 'zsh' || base === 'bash') && existsSync(candidate)) return candidate
+  const fallback = platform === 'darwin' ? '/bin/zsh' : '/bin/bash'
+  return existsSync(fallback) ? fallback : null
+}
+
+export function readLoginShellGradleUserHome(
+  platform: NodeJS.Platform = process.platform,
+  shell: string | undefined = process.env.SHELL,
+): Promise<string | null> {
+  const bin = loginShellBin(platform, shell)
+  if (!bin) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    const child = spawn(bin, ['-lic', `printf '${GRADLE_USER_HOME_MARKER}%s' "$GRADLE_USER_HOME"`], {
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    let stdout = ''
+    let settled = false
+    const finish = (value: string | null) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(value)
+    }
+    const timer = setTimeout(() => {
+      child.kill()
+      finish(parseShellGradleUserHome(stdout))
+    }, LOGIN_SHELL_TIMEOUT_MS)
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString('utf8')
+    })
+    child.on('error', () => finish(null))
+    child.on('close', () => finish(parseShellGradleUserHome(stdout)))
+  })
+}
+
+let shellGradleUserHomeProbe: Promise<void> | null = null
+
+/** 进程里没有 GRADLE_USER_HOME 时问一次登录 shell，写入本进程。已有值或已问过则不再开 shell。 */
+export function ensureGradleUserHomeFromLoginShell(): Promise<void> {
+  if (gradleUserHomeFromEnv(process.env) || process.platform === 'win32') return Promise.resolve()
+  shellGradleUserHomeProbe ??= readLoginShellGradleUserHome().then((home) => {
+    if (home && !gradleUserHomeFromEnv(process.env)) process.env.GRADLE_USER_HOME = home
+  })
+  return shellGradleUserHomeProbe
 }
 
 export function withGradleUserHome(

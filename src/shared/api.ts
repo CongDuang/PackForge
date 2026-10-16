@@ -54,6 +54,8 @@ export type PackforgeApi = {
     module: string,
     jdkId?: string | null,
   ) => Promise<Result<VariantDiscovery>>
+  /** 停掉进行中的动态发现，改为读取模块 build.gradle(.kts) */
+  cancelVariantDiscovery: () => Promise<Result<void>>
   previewTaskName: (
     req: Pick<BuildRequest, 'module' | 'kind' | 'flavorPart' | 'buildType'>,
   ) => Promise<Result<{ taskName: string }>>

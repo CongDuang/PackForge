@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { appError } from '../../src/shared/errors.ts'
@@ -10,13 +10,67 @@ import {
 } from '../../src/shared/parseVariants.ts'
 import { err, ok, type Result } from '../../src/shared/result.ts'
 import { buildGradleTaskName } from '../../src/shared/taskName.ts'
-import type { BuildKind, BuildRequest, VariantDiscovery } from '../../src/shared/types.ts'
+import {
+  clampVariantDiscoverTimeoutSec,
+  type BuildKind,
+  type BuildRequest,
+  type VariantDiscovery,
+} from '../../src/shared/types.ts'
 import { resolveBuildEnv, withGradleUserHome } from './env.ts'
 import { validateProject } from './project.ts'
 import { getJdkState, getSettingsFromStore } from './store.ts'
 
-const TASKS_TIMEOUT_MS = 120_000
 const STATIC_WARNING = '回退解析，请核对'
+const CANCELLED_TASKS = '已取消动态发现'
+const KILL_FOLLOWUP_MS = 2_000
+
+type ActiveTasks = {
+  child: ChildProcess
+  timer: ReturnType<typeof setTimeout>
+  reject: (error: Error) => void
+}
+
+let activeTasks: ActiveTasks | null = null
+
+function killProcessTree(child: ChildProcess): void {
+  const pid = child.pid
+  if (!pid) return
+  if (process.platform === 'win32') {
+    spawn('taskkill', ['/pid', String(pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' })
+    return
+  }
+  try {
+    process.kill(-pid, 'SIGTERM')
+  } catch {
+    try {
+      child.kill('SIGTERM')
+    } catch {
+      // 进程已经结束
+    }
+  }
+  setTimeout(() => {
+    try {
+      process.kill(-pid, 'SIGKILL')
+    } catch {
+      try {
+        child.kill('SIGKILL')
+      } catch {
+        // 进程已经结束
+      }
+    }
+  }, KILL_FOLLOWUP_MS)
+}
+
+/** 停掉进行中的 gradlew tasks，让这次发现改走静态解析。没有进行中的发现时直接返回。 */
+export function cancelVariantDiscovery(): Result<void> {
+  const current = activeTasks
+  if (!current) return ok(undefined)
+  activeTasks = null
+  clearTimeout(current.timer)
+  killProcessTree(current.child)
+  current.reject(new Error(CANCELLED_TASKS))
+  return ok(undefined)
+}
 
 export function previewTaskName(
   req: Pick<BuildRequest, 'module' | 'kind' | 'flavorPart' | 'buildType'>,
@@ -83,26 +137,35 @@ export async function discoverVariants(
       }`,
     )
   } else {
+    const timeoutMs = clampVariantDiscoverTimeoutSec(settings.variantDiscoverTimeoutSec) * 1000
     const tasks = await tryDiscoverFromTasks(
       validated.data.path,
       validated.data.wrapperCommand,
       moduleName,
       knownBuildTypes,
       envResult.data.env,
+      timeoutMs,
     )
     if (tasks.data) {
       return ok({ ...mergeVariantDiscovery(tasks.data, staticParsed), source: 'tasks' })
     }
-    dynamicFailureDetail = clipDetail(tasks.error ?? 'gradlew tasks 未返回可用变体')
+    dynamicFailureDetail =
+      tasks.error === CANCELLED_TASKS
+        ? CANCELLED_TASKS
+        : clipDetail(tasks.error ?? 'gradlew tasks 未返回可用变体')
   }
 
   if (staticParsed) {
+    const warning =
+      dynamicFailureDetail === CANCELLED_TASKS
+        ? `${STATIC_WARNING}（${CANCELLED_TASKS}）`
+        : dynamicFailureDetail
+          ? `${STATIC_WARNING}（动态发现失败：${dynamicFailureDetail}）`
+          : STATIC_WARNING
     return ok({
       ...staticParsed,
       source: 'static',
-      warning: dynamicFailureDetail
-        ? `${STATIC_WARNING}（动态发现失败：${dynamicFailureDetail}）`
-        : STATIC_WARNING,
+      warning,
     })
   }
 
@@ -121,6 +184,7 @@ async function tryDiscoverFromTasks(
   module: string,
   knownBuildTypes: ReadonlySet<string>,
   buildEnv: Record<string, string>,
+  timeoutMs: number,
 ): Promise<{ data: Omit<VariantDiscovery, 'source' | 'warning'> | null; error?: string }> {
   try {
     const output = await runWrapperTasks(
@@ -129,6 +193,7 @@ async function tryDiscoverFromTasks(
       module,
       knownBuildTypes,
       buildEnv,
+      timeoutMs,
     )
     const parsed = parseGradleTasksOutput(output, knownBuildTypes)
     if (parsed.buildTypes.length === 0) {
@@ -167,7 +232,9 @@ function runWrapperTasks(
   module: string,
   knownBuildTypes: ReadonlySet<string>,
   buildEnv: Record<string, string>,
+  timeoutMs: number,
 ): Promise<string> {
+  if (activeTasks) cancelVariantDiscovery()
   return new Promise((resolve, reject) => {
     const args = [`:${module}:tasks`, '--all']
     const child = spawn(wrapperCommand, args, {
@@ -175,13 +242,28 @@ function runWrapperTasks(
       env: withGradleUserHome(process.env, buildEnv),
       windowsHide: true,
       shell: process.platform === 'win32',
+      detached: process.platform !== 'win32',
     })
     let stdout = ''
     let stderr = ''
-    const timer = setTimeout(() => {
-      child.kill()
-      reject(new Error('tasks 超时'))
-    }, TASKS_TIMEOUT_MS)
+    let settled = false
+    let timer: ReturnType<typeof setTimeout>
+    const settle = (fn: () => void) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      if (activeTasks?.child === child) activeTasks = null
+      fn()
+    }
+    timer = setTimeout(() => {
+      killProcessTree(child)
+      settle(() => reject(new Error('tasks 超时')))
+    }, timeoutMs)
+    activeTasks = {
+      child,
+      timer,
+      reject: (error) => settle(() => reject(error)),
+    }
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString('utf8')
@@ -190,16 +272,16 @@ function runWrapperTasks(
       stderr += chunk.toString('utf8')
     })
     child.on('error', (error) => {
-      clearTimeout(timer)
-      reject(error)
+      settle(() => reject(error))
     })
     child.on('close', (code) => {
-      clearTimeout(timer)
-      if (code === 0 || parseGradleTasksOutput(stdout, knownBuildTypes).buildTypes.length > 0) {
-        resolve(stdout)
-        return
-      }
-      reject(new Error(stderr.trim() || `tasks 退出码 ${code ?? 'null'}`))
+      settle(() => {
+        if (code === 0 || parseGradleTasksOutput(stdout, knownBuildTypes).buildTypes.length > 0) {
+          resolve(stdout)
+          return
+        }
+        reject(new Error(stderr.trim() || `tasks 退出码 ${code ?? 'null'}`))
+      })
     })
   })
 }

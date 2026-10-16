@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { PRIVACY_POINTS, PRODUCT_NAME, PRODUCT_SLOGAN } from './about.ts'
-import { DEFAULT_SETTINGS } from './types.ts'
+import {
+  clampVariantDiscoverTimeoutSec,
+  DEFAULT_SETTINGS,
+  VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC,
+} from './types.ts'
 
 describe('about copy', () => {
   it('keeps product name and slogan', () => {
@@ -28,5 +32,11 @@ describe('settings defaults', () => {
     assert.equal(DEFAULT_SETTINGS.androidSdkPath, '')
     assert.equal(DEFAULT_SETTINGS.advancedGradleArgs, '')
     assert.equal(DEFAULT_SETTINGS.theme, 'system')
+    assert.equal(DEFAULT_SETTINGS.variantDiscoverTimeoutSec, VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC)
+    assert.equal(clampVariantDiscoverTimeoutSec(''), 30)
+    assert.equal(clampVariantDiscoverTimeoutSec('nope'), 30)
+    assert.equal(clampVariantDiscoverTimeoutSec(1), 5)
+    assert.equal(clampVariantDiscoverTimeoutSec(999), 300)
+    assert.equal(clampVariantDiscoverTimeoutSec(45.2), 45)
   })
 })

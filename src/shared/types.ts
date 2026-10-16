@@ -60,6 +60,24 @@ export type AppSettings = {
   advancedGradleArgs: string
   /** 外观：浅色 / 深色 / 跟随系统 */
   theme: ThemePreference
+  /** 动态发现变体（gradlew tasks）的超时，秒 */
+  variantDiscoverTimeoutSec: number
+}
+
+export const VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC = 30
+export const VARIANT_DISCOVER_TIMEOUT_MIN_SEC = 5
+export const VARIANT_DISCOVER_TIMEOUT_MAX_SEC = 300
+
+/** 非法或空值回到 30 秒；过小夹到 5，过大夹到 300。 */
+export function clampVariantDiscoverTimeoutSec(value: unknown): number {
+  const text = typeof value === 'number' ? String(value) : String(value ?? '').trim()
+  if (!text) return VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC
+  const parsed = Number(text)
+  if (!Number.isFinite(parsed)) return VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC
+  const sec = Math.round(parsed)
+  if (sec < VARIANT_DISCOVER_TIMEOUT_MIN_SEC) return VARIANT_DISCOVER_TIMEOUT_MIN_SEC
+  if (sec > VARIANT_DISCOVER_TIMEOUT_MAX_SEC) return VARIANT_DISCOVER_TIMEOUT_MAX_SEC
+  return sec
 }
 
 export type ProjectValidation = {
@@ -103,4 +121,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   allowSystemJdkFallback: false,
   advancedGradleArgs: '',
   theme: 'system',
+  variantDiscoverTimeoutSec: VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC,
 }

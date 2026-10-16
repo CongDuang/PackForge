@@ -7,6 +7,8 @@ import {
   prependJavaBinToPath,
   readLocalPropertiesSdkDir,
   resolveAndroidSdkPath,
+  loginShellBin,
+  parseShellGradleUserHome,
   resolveBuildEnv,
   resolveJavaHomeForBuild,
   unescapeSdkDir,
@@ -237,6 +239,16 @@ describe('resolveBuildEnv', () => {
     assert.equal(result.ok, true)
     if (!result.ok) return
     assert.equal(result.data.env.GRADLE_USER_HOME, '/opt/gradle-user')
+  })
+
+  it('reads GRADLE_USER_HOME after the shell marker and ignores rc noise', () => {
+    assert.equal(
+      parseShellGradleUserHome('compinit done\n__PF_GUH__/opt/gradle-user\n% '),
+      '/opt/gradle-user',
+    )
+    assert.equal(parseShellGradleUserHome('__PF_GUH__'), null)
+    assert.equal(parseShellGradleUserHome('no marker'), null)
+    assert.equal(loginShellBin('win32', 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe'), null)
   })
 
   it('drops an empty GRADLE_USER_HOME so Gradle keeps its default directory', () => {

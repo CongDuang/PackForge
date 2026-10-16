@@ -11,7 +11,7 @@ import Button from '../components/ui/Button'
 import { formatUserError } from '../shared/errorHints'
 import { preflightSync } from '../shared/preflight'
 import { buildGradleTaskName, composeFlavorPart } from '../shared/taskName'
-import type { VariantDiscovery } from '../shared/types'
+import { clampVariantDiscoverTimeoutSec, type VariantDiscovery } from '../shared/types'
 import { DEFAULT_LOG_HEIGHT, useWorkbenchStore } from '../store/workbenchStore'
 
 function packforgeApi() {
@@ -43,6 +43,8 @@ export default function WorkbenchPage() {
   const modules = useWorkbenchStore((s) => s.modules)
   const parseWarning = useWorkbenchStore((s) => s.parseWarning)
   const variantLoading = useWorkbenchStore((s) => s.variantLoading)
+  const [variantSecondsLeft, setVariantSecondsLeft] = useState<number | null>(null)
+  const variantCountdownRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const variantError = useWorkbenchStore((s) => s.variantError)
   const jdkError = useWorkbenchStore((s) => s.jdkError)
   const buildStatus = useWorkbenchStore((s) => s.buildStatus)
@@ -234,6 +236,12 @@ export default function WorkbenchPage() {
     }
   }, [project])
 
+  useEffect(() => {
+    return () => {
+      if (variantCountdownRef.current) clearInterval(variantCountdownRef.current)
+    }
+  }, [])
+
   const refreshVariants = useCallback(async (projectPath: string, module: string) => {
     const api = packforgeApi()
     const s = useWorkbenchStore.getState()
@@ -241,8 +249,19 @@ export default function WorkbenchPage() {
       s.setVariantError('请在桌面应用内刷新变体')
       return
     }
+    const settings = await api.getSettings()
+    const total = settings.ok
+      ? clampVariantDiscoverTimeoutSec(settings.data.variantDiscoverTimeoutSec)
+      : 30
     s.setVariantLoading(true)
     s.setVariantError(undefined)
+    setVariantSecondsLeft(total)
+    if (variantCountdownRef.current) clearInterval(variantCountdownRef.current)
+    const started = Date.now()
+    variantCountdownRef.current = setInterval(() => {
+      const left = Math.max(0, total - Math.floor((Date.now() - started) / 1000))
+      setVariantSecondsLeft(left)
+    }, 250)
     try {
       const result = await api.discoverVariants(projectPath, module, s.jdkId || null)
       if (!result.ok) {
@@ -254,8 +273,19 @@ export default function WorkbenchPage() {
       s.setBuildType(pickDefaultBuildType(result.data.buildTypes))
       s.setFlavorSelections(pickDefaultFlavors(result.data))
     } finally {
+      if (variantCountdownRef.current) {
+        clearInterval(variantCountdownRef.current)
+        variantCountdownRef.current = undefined
+      }
+      setVariantSecondsLeft(null)
       useWorkbenchStore.getState().setVariantLoading(false)
     }
+  }, [])
+
+  const cancelVariantDiscovery = useCallback(() => {
+    const api = packforgeApi()
+    if (!api) return
+    void api.cancelVariantDiscovery()
   }, [])
 
   useEffect(() => {
@@ -524,6 +554,7 @@ export default function WorkbenchPage() {
                           buildType={buildType}
                           flavorByDimension={flavorSelections}
                           loading={variantLoading}
+                          secondsLeft={variantSecondsLeft}
                           error={variantError}
                           onKindChange={actions.setKind}
                           onBuildTypeChange={actions.setBuildType}
@@ -531,6 +562,7 @@ export default function WorkbenchPage() {
                           onRefresh={() => {
                             if (project) void refreshVariants(project.path, moduleName)
                           }}
+                          onCancelDiscovery={cancelVariantDiscovery}
                         />
                       </>
                     ) : (

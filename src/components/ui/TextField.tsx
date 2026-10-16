@@ -10,7 +10,7 @@ type TextFieldProps = {
   placeholder?: string
   multiline?: boolean
   hint?: string
-  type?: 'text' | 'password'
+  type?: 'text' | 'password' | 'number'
 }
 
 export default function TextField({

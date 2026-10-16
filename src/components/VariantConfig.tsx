@@ -11,11 +11,14 @@ type VariantConfigProps = {
   buildType: string
   flavorByDimension: Record<string, string>
   loading?: boolean
+  /** 动态发现剩余秒数；仅 loading 时展示 */
+  secondsLeft?: number | null
   error?: string
   onKindChange: (kind: BuildKind) => void
   onBuildTypeChange: (buildType: string) => void
   onFlavorChange: (dimension: string, flavor: string) => void
   onRefresh: () => void
+  onCancelDiscovery?: () => void
 }
 
 export default function VariantConfig({
@@ -25,11 +28,13 @@ export default function VariantConfig({
   buildType,
   flavorByDimension,
   loading,
+  secondsLeft,
   error,
   onKindChange,
   onBuildTypeChange,
   onFlavorChange,
   onRefresh,
+  onCancelDiscovery,
 }: VariantConfigProps) {
   const flavorPart = useMemo(() => {
     if (!discovery) return ''
@@ -83,6 +88,16 @@ export default function VariantConfig({
         <Button className="shrink-0" disabled={loading} onClick={onRefresh}>
           {loading ? '发现中…' : '刷新变体'}
         </Button>
+        {loading ? (
+          <span className="shrink-0 pb-2 font-mono text-xs text-[var(--text-muted)]">
+            剩余 {secondsLeft ?? 0} 秒
+          </span>
+        ) : null}
+        {loading ? (
+          <Button className="shrink-0" onClick={onCancelDiscovery}>
+            改用脚本
+          </Button>
+        ) : null}
       </div>
 
       <div className="space-y-1">

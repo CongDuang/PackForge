@@ -24,6 +24,7 @@ const api: PackforgeApi = {
   pinRecentProject: (id, pinned) => invoke('pinRecentProject', id, pinned),
   listModules: (projectPath) => invoke('listModules', projectPath),
   discoverVariants: (projectPath, module, jdkId) => invoke('discoverVariants', projectPath, module, jdkId),
+  cancelVariantDiscovery: () => invoke('cancelVariantDiscovery'),
   previewTaskName: (req) => invoke('previewTaskName', req),
   listJdks: () => invoke('listJdks'),
   importJdk: (homePath) => invoke('importJdk', homePath),

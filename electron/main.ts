@@ -3,6 +3,7 @@ import path from 'node:path'
 import { existsSync } from 'node:fs'
 import { registerIpcHandlers } from './ipc/register'
 import { configureAppIdentity, installApplicationMenu } from './menu'
+import { ensureGradleUserHomeFromLoginShell } from './services/env'
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL) || !app.isPackaged
 
@@ -40,7 +41,8 @@ function createWindow(): void {
   }
 }
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
+  await ensureGradleUserHomeFromLoginShell()
   if (process.platform === 'win32') app.setAppUserModelId('com.packforge.app')
   configureAppIdentity()
   installApplicationMenu()

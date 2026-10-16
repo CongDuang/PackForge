@@ -13,6 +13,7 @@ export const INVOKE_METHODS = [
   'pinRecentProject',
   'listModules',
   'discoverVariants',
+  'cancelVariantDiscovery',
   'previewTaskName',
   'listJdks',
   'importJdk',

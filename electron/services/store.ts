@@ -1,11 +1,19 @@
 import Store from 'electron-store'
 import {
+  clampVariantDiscoverTimeoutSec,
   DEFAULT_SETTINGS,
   type AppSettings,
   type JdkInstall,
   type ProjectRef,
   type ProjectSigningBinding,
 } from '../../src/shared/types'
+
+function normalizeSettings(settings: AppSettings): AppSettings {
+  return {
+    ...settings,
+    variantDiscoverTimeoutSec: clampVariantDiscoverTimeoutSec(settings.variantDiscoverTimeoutSec),
+  }
+}
 
 export type StoreSchema = {
   settings: AppSettings
@@ -34,11 +42,11 @@ export function getAppStore(): Store<StoreSchema> {
 }
 
 export function getSettingsFromStore(): AppSettings {
-  return { ...DEFAULT_SETTINGS, ...getAppStore().get('settings') }
+  return normalizeSettings({ ...DEFAULT_SETTINGS, ...getAppStore().get('settings') })
 }
 
 export function setSettingsInStore(partial: Partial<AppSettings>): AppSettings {
-  const next = { ...getSettingsFromStore(), ...partial }
+  const next = normalizeSettings({ ...getSettingsFromStore(), ...partial })
   getAppStore().set('settings', next)
   return next
 }
