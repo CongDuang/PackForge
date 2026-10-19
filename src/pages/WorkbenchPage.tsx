@@ -9,6 +9,7 @@ import ProjectSigning from '../components/ProjectSigning'
 import VariantConfig from '../components/VariantConfig'
 import Button from '../components/ui/Button'
 import { formatUserError } from '../shared/errorHints'
+import { resolveProjectJdk } from '../shared/jdkSelection'
 import { preflightSync } from '../shared/preflight'
 import { buildGradleTaskName, composeFlavorPart } from '../shared/taskName'
 import { clampVariantDiscoverTimeoutSec, type VariantDiscovery } from '../shared/types'
@@ -16,6 +17,10 @@ import { DEFAULT_LOG_HEIGHT, useWorkbenchStore } from '../store/workbenchStore'
 
 function packforgeApi() {
   return window.packforge
+}
+
+function isWindowsPlatform(): boolean {
+  return typeof navigator !== 'undefined' && /Windows/i.test(navigator.userAgent)
 }
 
 function pickDefaultBuildType(types: string[]): string {
@@ -37,6 +42,8 @@ export default function WorkbenchPage() {
   const buildType = useWorkbenchStore((s) => s.buildType)
   const flavorSelections = useWorkbenchStore((s) => s.flavorSelections)
   const jdkId = useWorkbenchStore((s) => s.jdkId)
+  const jdkReady = useWorkbenchStore((s) => s.jdkReady)
+  const projectPath = project?.path ?? ''
   const jdkInstalls = useWorkbenchStore((s) => s.jdkInstalls)
   const projectSigning = useWorkbenchStore((s) => s.projectSigning)
   const discovery = useWorkbenchStore((s) => s.discovery)
@@ -67,6 +74,11 @@ export default function WorkbenchPage() {
   const signingIntentRef = useRef(0)
   const [maxLogHeight, setMaxLogHeight] = useState(DEFAULT_LOG_HEIGHT * 2)
   const [installApkPath, setInstallApkPath] = useState<string | null>(null)
+  const [gradleHomePrompt, setGradleHomePrompt] = useState(false)
+
+  useEffect(() => {
+    setGradleHomePrompt(false)
+  }, [project?.path])
 
   useEffect(() => {
     const el = rootRef.current
@@ -175,6 +187,7 @@ export default function WorkbenchPage() {
       } else if (e.status === 'succeeded') {
         s.setBanner('构建成功')
         s.setLastError(null)
+        s.setArtifactsExpanded(true)
         void refreshArtifacts().then((items) => {
           if (items && items.length === 0) {
             const text = formatUserError('E_ARTIFACT_NONE', '构建成功但未扫到产物')
@@ -196,6 +209,10 @@ export default function WorkbenchPage() {
       flushLogs()
     }
   }, [enqueueLog, flushLogs, refreshArtifacts])
+
+  useEffect(() => {
+    useWorkbenchStore.getState().setArtifactsExpanded(false)
+  }, [project?.path])
 
   useEffect(() => {
     if (!project) {
@@ -303,14 +320,34 @@ export default function WorkbenchPage() {
         cur.setJdkError(formatUserError(result.error.code, result.error.message))
         return
       }
-      cur.setJdkInstalls(result.data.installs)
-      cur.setJdkId(result.data.defaultId ?? '')
+      const byProject = result.data.byProject ?? {}
+      cur.setJdkCatalog({
+        installs: result.data.installs,
+        defaultId: result.data.defaultId,
+        byProject,
+      })
+      const path = useWorkbenchStore.getState().project?.path
+      cur.setJdkId(
+        resolveProjectJdk(path ? byProject[path] : undefined, result.data.installs, result.data.defaultId),
+      )
       cur.setJdkError(undefined)
     })
     return () => {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!jdkReady) return
+    const s = useWorkbenchStore.getState()
+    s.setJdkId(
+      resolveProjectJdk(
+        projectPath ? s.jdkByProject[projectPath] : undefined,
+        s.jdkInstalls,
+        s.jdkDefaultId,
+      ),
+    )
+  }, [projectPath, jdkReady])
 
   async function changeJdk(id: string) {
     const api = packforgeApi()
@@ -319,13 +356,17 @@ export default function WorkbenchPage() {
       s.setJdkError('请在桌面应用内选择 JDK')
       return
     }
-    const result = await api.setDefaultJdk(id)
-    if (!result.ok) {
-      s.setJdkError(formatUserError(result.error.code, result.error.message))
-      return
+    const path = s.project?.path
+    if (path) {
+      const result = await api.setProjectJdk(path, id)
+      if (!result.ok) {
+        s.setJdkError(formatUserError(result.error.code, result.error.message))
+        return
+      }
+      s.setJdkByProject({ ...useWorkbenchStore.getState().jdkByProject, [path]: id })
     }
-    s.setJdkId(id)
-    s.setJdkError(undefined)
+    useWorkbenchStore.getState().setJdkId(id)
+    useWorkbenchStore.getState().setJdkError(undefined)
   }
 
   useEffect(() => {
@@ -375,7 +416,7 @@ export default function WorkbenchPage() {
     projectSigning,
   })
 
-  async function handleStart() {
+  async function handleStart(skipGradlePrompt = false) {
     const api = packforgeApi()
     const s = useWorkbenchStore.getState()
     if (!api || !s.project) {
@@ -410,6 +451,14 @@ export default function WorkbenchPage() {
       return
     }
 
+    if (!skipGradlePrompt && isWindowsPlatform() && !env.data.gradleUserHome) {
+      const settings = await api.getSettings()
+      if (!settings.ok || !settings.data.gradleUserHomePrompted) {
+        setGradleHomePrompt(true)
+        return
+      }
+    }
+
     s.setBanner(null)
     s.setLastError(null)
     s.clearLogs()
@@ -436,6 +485,24 @@ export default function WorkbenchPage() {
     s.setBuildId(result.data.buildId)
     s.setBuildStatus('running')
     s.setBanner(`构建中：${gate.data.taskName}`)
+  }
+
+  async function rememberGradlePrompt() {
+    const api = packforgeApi()
+    if (!api) return
+    await api.setSettings({ gradleUserHomePrompted: true })
+  }
+
+  async function continueWithDefaultGradleHome() {
+    setGradleHomePrompt(false)
+    await rememberGradlePrompt()
+    await handleStart(true)
+  }
+
+  async function customizeGradleHome() {
+    setGradleHomePrompt(false)
+    await rememberGradlePrompt()
+    useWorkbenchStore.getState().setSettingsAnchor('gradle-user-home')
   }
 
   async function handleCancel() {
@@ -494,7 +561,7 @@ export default function WorkbenchPage() {
         <button
           type="button"
           className={[
-            'absolute right-0 z-20 flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-sm outline-none hover:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
+            'absolute right-0 z-20 flex cursor-pointer items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] px-3 py-1.5 text-xs text-[var(--text-primary)] shadow-sm outline-none hover:border-[var(--accent)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
             banner ? 'top-12' : 'top-0',
           ].join(' ')}
           onClick={() => useWorkbenchStore.getState().setArtifactsExpanded(true)}
@@ -529,7 +596,7 @@ export default function WorkbenchPage() {
               <div className="mt-3">
                 <section className="rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4">
                   <h2 className="text-sm font-medium text-[var(--text-primary)]">打包配置</h2>
-                  <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
+                  <p className="mt-1.5 select-none text-xs leading-5 text-[var(--text-muted)]">
                     选择 JDK、模块、产物类型与变体；签名按工程路径绑定，可按需编辑。预检通过后即可开始打包。
                   </p>
                   <div className="mt-3 space-y-3">
@@ -566,7 +633,7 @@ export default function WorkbenchPage() {
                         />
                       </>
                     ) : (
-                      <p className="text-xs text-[var(--text-muted)]">打开工程后将列出模块与变体</p>
+                      <p className="select-none text-xs text-[var(--text-muted)]">打开工程后将列出模块与变体</p>
                     )}
                   </div>
                 </section>
@@ -605,7 +672,7 @@ export default function WorkbenchPage() {
             <Button disabled={!running} onClick={() => void handleCancel()}>
               取消
             </Button>
-            <label className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-[var(--text-muted)] select-none">
               <input
                 type="checkbox"
                 checked={cleanBeforeBuild}
@@ -660,6 +727,28 @@ export default function WorkbenchPage() {
           logBufferRef.current = []
         }}
       />
+      {gradleHomePrompt ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            role="dialog"
+            aria-labelledby="gradle-home-prompt-title"
+            className="w-full max-w-md space-y-4 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] p-4"
+          >
+            <h2 id="gradle-home-prompt-title" className="text-sm font-medium text-[var(--text-primary)]">
+              Gradle 用户目录
+            </h2>
+            <p className="select-none text-xs leading-5 text-[var(--text-muted)]">
+              当前使用的是 Gradle 默认目录（%USERPROFILE%\.gradle）。要自定义 GRADLE_USER_HOME 吗？
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => void customizeGradleHome()}>自定义路径</Button>
+              <Button variant="primary" onClick={() => void continueWithDefaultGradleHome()}>
+                继续本次构建
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {installApkPath && project ? (
         <ApkInstallDialog
           apkPath={installApkPath}

@@ -12,6 +12,11 @@ function packforgeApi() {
 
 export default function AppShell() {
   const [page, setPage] = useState<PageId>(DEFAULT_PAGE)
+  const settingsAnchor = useWorkbenchStore((s) => s.settingsAnchor)
+
+  useEffect(() => {
+    if (settingsAnchor) setPage('settings')
+  }, [settingsAnchor])
 
   useEffect(() => {
     const api = packforgeApi()

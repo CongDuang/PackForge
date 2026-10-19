@@ -136,7 +136,7 @@ export default function Sidebar({ current, onNavigate }: SidebarProps) {
               aria-label={label}
               onClick={() => onNavigate(id)}
               className={[
-                'flex items-center rounded-md outline-none',
+                'flex cursor-pointer items-center rounded-md outline-none',
                 'focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
                 collapsed ? 'justify-center px-2 py-2.5' : 'gap-2.5 px-3 py-2 text-left text-sm',
                 active
@@ -158,7 +158,7 @@ export default function Sidebar({ current, onNavigate }: SidebarProps) {
           aria-label={collapsed ? '展开侧栏' : '折叠侧栏'}
           title={collapsed ? '展开侧栏' : '折叠侧栏'}
           className={[
-            'flex w-full items-center rounded-md text-xs text-[var(--text-muted)] outline-none',
+            'flex w-full cursor-pointer items-center rounded-md text-xs text-[var(--text-muted)] outline-none',
             'hover:bg-[var(--bg-base)] hover:text-[var(--text-primary)]',
             'focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
             collapsed ? 'justify-center px-2 py-2' : 'gap-2 px-3 py-2',

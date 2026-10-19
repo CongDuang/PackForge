@@ -33,7 +33,7 @@ export default function JdkSelect({ installs, value, disabled, onChange }: JdkSe
         onChange={onChange}
       />
       {empty ? (
-        <p className="text-xs leading-5 text-[var(--warn)]">请到 JDK 管理导入本机安装目录</p>
+        <p className="select-none text-xs leading-5 text-[var(--warn)]">请到 JDK 管理导入本机安装目录</p>
       ) : (
         <p className="truncate font-mono text-xs leading-5 text-[var(--text-muted)]" title={value}>
           {installs.find((item) => item.id === value)?.homePath ?? ''}

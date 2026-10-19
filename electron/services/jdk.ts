@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { appError } from '../../src/shared/errors.ts'
 import { err, ok, type Result } from '../../src/shared/result.ts'
-import type { JdkInstall } from '../../src/shared/types.ts'
+import type { JdkInstall, JdkRegistry } from '../../src/shared/types.ts'
 import { afterRemoveJdk, javaBinaryForHome, parseJavaVersion, resolveJdkHome, upsertJdkInstall } from './jdkDetect.ts'
 import { getJdkState, setJdkState } from './store.ts'
 
@@ -25,16 +25,20 @@ export async function importJdk(homePath: string): Promise<Result<JdkInstall>> {
     homePath: home,
     source: 'import',
   }
-  setJdkState(upsertJdkInstall(getJdkState(), install))
+  const state = getJdkState()
+  const next = upsertJdkInstall(state, install)
+  setJdkState({ ...state, installs: next.installs, defaultId: next.defaultId })
   return ok(install)
 }
 
-export function listJdks(): Result<{ installs: JdkInstall[]; defaultId: string | null }> {
+export function listJdks(): Result<JdkRegistry> {
   return ok(getJdkState())
 }
 
 export function removeJdk(id: string): Result<void> {
-  setJdkState(afterRemoveJdk(getJdkState(), id))
+  const state = getJdkState()
+  const next = afterRemoveJdk(state, id)
+  setJdkState({ ...state, installs: next.installs, defaultId: next.defaultId })
   return ok(undefined)
 }
 
@@ -43,7 +47,19 @@ export function setDefaultJdk(id: string | null): Result<void> {
   if (id && !state.installs.some((item) => item.id === id)) {
     return err(appError('E_NO_JDK', '未选择有效 JDK', id))
   }
-  setJdkState({ installs: state.installs, defaultId: id })
+  setJdkState({ ...state, defaultId: id })
+  return ok(undefined)
+}
+
+export function setProjectJdk(projectPath: string, jdkId: string): Result<void> {
+  const path = projectPath.trim()
+  const id = jdkId.trim()
+  if (!path || !id) return err(appError('E_NO_JDK', '未选择有效 JDK', jdkId))
+  const state = getJdkState()
+  if (!state.installs.some((item) => item.id === id)) {
+    return err(appError('E_NO_JDK', '未选择有效 JDK', id))
+  }
+  setJdkState({ ...state, byProject: { ...state.byProject, [path]: id } })
   return ok(undefined)
 }
 

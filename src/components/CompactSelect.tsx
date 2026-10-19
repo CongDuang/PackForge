@@ -36,7 +36,7 @@ export default function CompactSelect({
           value={value}
           disabled={disabled || options.length === 0}
           onChange={(event) => onChange(event.target.value)}
-          className="field-sizing-content w-max max-w-full appearance-none rounded-md border border-[var(--border)] bg-[var(--bg-base)] py-2 pr-8 pl-3 font-mono text-sm text-[var(--text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-50"
+          className="field-sizing-content w-max max-w-full cursor-pointer appearance-none rounded-md border border-[var(--border)] bg-[var(--bg-base)] py-2 pr-8 pl-3 font-mono text-sm text-[var(--text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {options.length === 0 ? (
             <option value="">—</option>

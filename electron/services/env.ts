@@ -15,6 +15,8 @@ export type ResolvedBuildEnv = {
   javaHome: string
   androidHome: string
   diagnosis: string[]
+  /** null 表示交给 Gradle 默认目录 */
+  gradleUserHome: string | null
 }
 
 export type ResolveBuildEnvDeps = {
@@ -24,6 +26,8 @@ export type ResolveBuildEnvDeps = {
   platform?: NodeJS.Platform
   readLocalProperties?: (projectPath: string) => string | null
   jdkInstalls: { id: string; homePath: string }[]
+  /** 设置里手填的目录，优先于环境变量和登录 shell */
+  settingsGradleUserHome?: string
 }
 
 /** 解析 local.properties 文本中的 sdk.dir（处理 \: 与 \\ 转义）。只读，不写文件。 */
@@ -243,7 +247,7 @@ export function withGradleUserHome(
   overlay: Record<string, string>,
 ): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...base, ...overlay }
-  const home = gradleUserHomeFromEnv(base) ?? gradleUserHomeFromEnv(overlay)
+  const home = gradleUserHomeFromEnv(overlay) ?? gradleUserHomeFromEnv(base)
   if (home) env.GRADLE_USER_HOME = home
   else delete env.GRADLE_USER_HOME
   return env
@@ -310,10 +314,16 @@ export function resolveBuildEnv(
     ANDROID_SDK_ROOT: sdk.data.androidHome,
     PATH: pathValue,
   }
-  const gradleUserHome = gradleUserHomeFromEnv(processEnv)
+  const manual = (deps.settingsGradleUserHome || '').trim()
+  const fromEnv = gradleUserHomeFromEnv(processEnv)
+  const gradleUserHome = manual || fromEnv || null
   if (gradleUserHome) {
     env.GRADLE_USER_HOME = gradleUserHome
-    diagnosis.push(`使用环境变量 GRADLE_USER_HOME：${gradleUserHome}`)
+    diagnosis.push(
+      manual
+        ? `使用设置中的 GRADLE_USER_HOME：${manual}`
+        : `使用环境变量 GRADLE_USER_HOME：${fromEnv}`,
+    )
   } else {
     diagnosis.push('未设置 GRADLE_USER_HOME，使用 Gradle 默认目录')
   }
@@ -323,5 +333,6 @@ export function resolveBuildEnv(
     javaHome: java.data.javaHome,
     androidHome: sdk.data.androidHome,
     diagnosis,
+    gradleUserHome,
   })
 }

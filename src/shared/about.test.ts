@@ -33,6 +33,8 @@ describe('settings defaults', () => {
     assert.equal(DEFAULT_SETTINGS.advancedGradleArgs, '')
     assert.equal(DEFAULT_SETTINGS.theme, 'system')
     assert.equal(DEFAULT_SETTINGS.variantDiscoverTimeoutSec, VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC)
+    assert.equal(DEFAULT_SETTINGS.gradleUserHome, '')
+    assert.equal(DEFAULT_SETTINGS.gradleUserHomePrompted, false)
     assert.equal(clampVariantDiscoverTimeoutSec(''), 30)
     assert.equal(clampVariantDiscoverTimeoutSec('nope'), 30)
     assert.equal(clampVariantDiscoverTimeoutSec(1), 5)

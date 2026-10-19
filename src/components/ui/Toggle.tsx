@@ -13,7 +13,7 @@ export default function Toggle({ id, label, checked, onChange, hint }: TogglePro
         <label htmlFor={id} className="block text-sm text-[var(--text-primary)]">
           {label}
         </label>
-        {hint ? <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{hint}</p> : null}
+        {hint ? <p className="mt-1 select-none text-xs leading-5 text-[var(--text-muted)]">{hint}</p> : null}
       </div>
       <button
         id={id}
@@ -22,7 +22,7 @@ export default function Toggle({ id, label, checked, onChange, hint }: TogglePro
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={[
-          'relative mt-0.5 h-6 w-11 shrink-0 rounded-full outline-none transition-colors',
+          'relative mt-0.5 h-6 w-11 shrink-0 cursor-pointer rounded-full outline-none transition-colors',
           'focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
           checked ? 'bg-[var(--accent)]' : 'bg-[var(--border)]',
         ].join(' ')}

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { ArtifactItem } from '../shared/types'
 import Button from './ui/Button'
+import IconButton from './ui/IconButton'
 
 const revealLabel = /Windows/i.test(navigator.userAgent) ? '在资源管理器中显示' : '在访达中显示'
 
@@ -63,19 +64,17 @@ export default function ArtifactsPanel({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-sm font-medium text-[var(--text-primary)]">产物</h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+          <p className="mt-1 select-none text-xs leading-5 text-[var(--text-muted)]">
             仅列出 APK / AAB / mapping.txt。勾选后可复制到文件夹（不做拖出）。
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button disabled={busy} onClick={onRefresh}>
-            刷新
-          </Button>
-          <Button onClick={onCollapse}>折叠</Button>
+          <IconButton disabled={busy} icon="refresh" label="刷新" onClick={onRefresh} />
+          <IconButton icon="collapse" label="折叠" onClick={onCollapse} />
         </div>
       </div>
 
-      <label className="mt-3 flex items-center gap-2 text-xs text-[var(--text-muted)]">
+      <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-[var(--text-muted)] select-none">
         <input
           type="checkbox"
           checked={showAll}
@@ -98,7 +97,7 @@ export default function ArtifactsPanel({
 
       <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-auto">
         {items.length === 0 ? (
-          <p className="text-xs text-[var(--text-muted)]">暂无产物。构建成功后将自动扫描。</p>
+          <p className="select-none text-xs text-[var(--text-muted)]">暂无产物。构建成功后将自动扫描。</p>
         ) : (
           items.map((item) => (
             <label
@@ -128,7 +127,7 @@ export default function ArtifactsPanel({
                   {item.type === 'apk' ? (
                     <button
                       type="button"
-                      className="text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
+                      className="cursor-pointer text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
@@ -140,7 +139,7 @@ export default function ArtifactsPanel({
                   ) : null}
                   <button
                     type="button"
-                    className="text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
+                    className="cursor-pointer text-[11px] text-[var(--accent)] underline-offset-2 hover:underline"
                     onClick={(e) => {
                       e.preventDefault()
                       onReveal(item.path)

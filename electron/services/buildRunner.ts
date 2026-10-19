@@ -175,9 +175,10 @@ export async function startBuild(raw: unknown): Promise<Result<{ buildId: string
   const envResult = resolveBuildEnv(
     { projectPath: validated.data.path, jdkId: request.jdkId },
     {
-      settingsAndroidSdkPath: settings.androidSdkPath,
-      allowSystemJdkFallback: settings.allowSystemJdkFallback,
-      jdkInstalls: jdkState.installs,
+        settingsAndroidSdkPath: settings.androidSdkPath,
+        allowSystemJdkFallback: settings.allowSystemJdkFallback,
+        settingsGradleUserHome: settings.gradleUserHome,
+        jdkInstalls: jdkState.installs,
     },
   )
   if (!envResult.ok) return envResult

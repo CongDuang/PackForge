@@ -19,6 +19,8 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
+    minWidth: 1080,
+    minHeight: 680,
     title: '匠包 — 本地 Android 打包工作台',
     ...(resolveWindowIcon() ? { icon: resolveWindowIcon() } : {}),
     webPreferences: {

@@ -129,7 +129,7 @@ function KindButton({
       type="button"
       onClick={onClick}
       className={[
-        'rounded px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
+        'cursor-pointer rounded px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
         active
           ? 'bg-[var(--accent)] text-[var(--bg-base)]'
           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',

@@ -30,6 +30,7 @@ const api: PackforgeApi = {
   importJdk: (homePath) => invoke('importJdk', homePath),
   removeJdk: (id) => invoke('removeJdk', id),
   setDefaultJdk: (id) => invoke('setDefaultJdk', id),
+  setProjectJdk: (projectPath, jdkId) => invoke('setProjectJdk', projectPath, jdkId),
   getProjectSigning: (projectPath) => invoke('getProjectSigning', projectPath),
   upsertProjectSigning: (projectPath, input) => invoke('upsertProjectSigning', projectPath, input),
   clearProjectSigning: (projectPath) => invoke('clearProjectSigning', projectPath),

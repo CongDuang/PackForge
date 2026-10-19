@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Button from './ui/Button'
+import IconButton from './ui/IconButton'
 
 export type LogLine = {
   id: number
@@ -111,13 +111,15 @@ export default function BuildLogPanel({
                 placeholder="过滤…"
                 className="h-7 w-36 rounded border border-[var(--border)] bg-[var(--bg-base)] px-2 text-xs text-[var(--text-primary)] outline-none focus:ring-1 focus:ring-[var(--accent)]"
               />
-              <Button onClick={() => void copyAll()}>复制</Button>
-              <Button variant="danger" onClick={onClear}>
-                清空
-              </Button>
+              <IconButton icon="copy" label="复制" onClick={() => void copyAll()} />
+              <IconButton tone="danger" icon="clear" label="清空" onClick={onClear} />
             </>
           ) : null}
-          <Button onClick={onToggleExpanded}>{expanded ? '折叠' : '展开'}</Button>
+          <IconButton
+            icon={expanded ? 'collapse' : 'expand'}
+            label={expanded ? '折叠' : '展开'}
+            onClick={onToggleExpanded}
+          />
         </div>
       </div>
       {expanded ? (
@@ -131,7 +133,7 @@ export default function BuildLogPanel({
           }}
         >
           {visible.length === 0 ? (
-            <p>Gradle 输出将流式显示于此（已脱敏）。</p>
+            <p className="select-none">Gradle 输出将流式显示于此（已脱敏）。</p>
           ) : (
             visible.map((item) => (
               <div

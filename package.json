@@ -1,6 +1,6 @@
 {
   "name": "packforge",
-  "version": "0.4.0",
+  "version": "0.5.2",
   "private": true,
   "description": "匠包 — 本地 Android Gradle 打包工作台",
   "main": "dist-electron/electron/main.js",

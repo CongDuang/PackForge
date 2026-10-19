@@ -20,7 +20,7 @@ export default function Button({
     <button
       type={type}
       className={[
-        'rounded-md px-3 py-2 text-sm outline-none',
+        'cursor-pointer rounded-md px-3 py-2 text-sm outline-none',
         'focus-visible:ring-2',
         variant === 'danger'
           ? 'focus-visible:ring-[var(--danger)]'

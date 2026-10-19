@@ -3,7 +3,7 @@ import {
   clampVariantDiscoverTimeoutSec,
   DEFAULT_SETTINGS,
   type AppSettings,
-  type JdkInstall,
+  type JdkRegistry,
   type ProjectRef,
   type ProjectSigningBinding,
 } from '../../src/shared/types'
@@ -18,14 +18,14 @@ function normalizeSettings(settings: AppSettings): AppSettings {
 export type StoreSchema = {
   settings: AppSettings
   projects: { recent: ProjectRef[] }
-  jdk: { installs: JdkInstall[]; defaultId: string | null }
+  jdk: JdkRegistry
   signing: { bindings: Record<string, ProjectSigningBinding> }
 }
 
 const defaults: StoreSchema = {
   settings: { ...DEFAULT_SETTINGS },
   projects: { recent: [] },
-  jdk: { installs: [], defaultId: null },
+  jdk: { installs: [], defaultId: null, byProject: {} },
   signing: { bindings: {} },
 }
 
@@ -60,11 +60,17 @@ export function setRecentProjects(recent: ProjectRef[]): ProjectRef[] {
   return recent
 }
 
-export function getJdkState(): { installs: JdkInstall[]; defaultId: string | null } {
-  return getAppStore().get('jdk')
+export function getJdkState(): JdkRegistry {
+  const raw = getAppStore().get('jdk')
+  const byProject = raw?.byProject
+  return {
+    installs: raw?.installs ?? [],
+    defaultId: raw?.defaultId ?? null,
+    byProject: byProject && typeof byProject === 'object' ? byProject : {},
+  }
 }
 
-export function setJdkState(jdk: { installs: JdkInstall[]; defaultId: string | null }): void {
+export function setJdkState(jdk: JdkRegistry): void {
   getAppStore().set('jdk', jdk)
 }
 

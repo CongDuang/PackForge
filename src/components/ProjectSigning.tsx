@@ -215,7 +215,7 @@ export default function ProjectSigning({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium text-[var(--text-primary)]">本工程签名</h2>
-          <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+          <p className="mt-1 select-none text-xs leading-5 text-[var(--text-muted)]">
             与当前工程路径绑定并缓存。再次打开同路径自动带出。密码只进系统钥匙串。
           </p>
         </div>
@@ -318,7 +318,7 @@ export default function ProjectSigning({
       <div>
         <h3 className="text-xs font-medium text-[var(--text-primary)]">注入参数预览</h3>
         {shownArgs.length === 0 ? (
-          <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+          <p className="mt-1 select-none text-xs leading-5 text-[var(--text-muted)]">
             当前不附加 android.injected.signing 参数。
           </p>
         ) : (

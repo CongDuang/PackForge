@@ -239,6 +239,30 @@ describe('resolveBuildEnv', () => {
     assert.equal(result.ok, true)
     if (!result.ok) return
     assert.equal(result.data.env.GRADLE_USER_HOME, '/opt/gradle-user')
+    assert.equal(result.data.gradleUserHome, '/opt/gradle-user')
+  })
+
+  it('prefers a settings Gradle user home over the environment', () => {
+    const sdk = makeDir('gradle-settings-sdk')
+    const jdk = makeDir('gradle-settings-jdk')
+    touchJava(jdk)
+    const result = resolveBuildEnv(
+      { projectPath: makeDir('gradle-settings-project'), jdkId: jdk },
+      {
+        settingsAndroidSdkPath: sdk,
+        allowSystemJdkFallback: false,
+        settingsGradleUserHome: ' /opt/from-settings ',
+        processEnv: { PATH: '/usr/bin', GRADLE_USER_HOME: '/opt/from-env' },
+        platform: 'darwin',
+        jdkInstalls: [{ id: jdk, homePath: jdk }],
+        readLocalProperties: () => null,
+      },
+    )
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.equal(result.data.gradleUserHome, '/opt/from-settings')
+    assert.equal(result.data.env.GRADLE_USER_HOME, '/opt/from-settings')
+    assert.ok(result.data.diagnosis.some((line) => line.includes('使用设置中的 GRADLE_USER_HOME')))
   })
 
   it('reads GRADLE_USER_HOME after the shell marker and ignores rc noise', () => {
@@ -259,6 +283,14 @@ describe('resolveBuildEnv', () => {
     assert.equal(env.GRADLE_USER_HOME, undefined)
     assert.equal(env.JAVA_HOME, '/jdk')
     assert.equal(env.PATH, '/usr/bin')
+  })
+
+  it('lets an explicit Gradle user home override the process environment', () => {
+    const env = withGradleUserHome(
+      { GRADLE_USER_HOME: '/from-shell', PATH: '/usr/bin' },
+      { GRADLE_USER_HOME: '/from-settings' },
+    )
+    assert.equal(env.GRADLE_USER_HOME, '/from-settings')
   })
 
   it('returns E_NO_SDK when sdk missing', () => {

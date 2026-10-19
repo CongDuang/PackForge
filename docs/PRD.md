@@ -4,17 +4,21 @@
 |------|------|
 | 产品中文名 | 匠包 |
 | 产品英文名 | PackForge |
-| 文档版本 | v1.14 |
+| 文档版本 | v1.18 |
 | 状态 | 已确认技术栈，待开发 |
 | 仓库 | `android-packing-tools` |
 | 目标平台 | macOS、Windows |
 | 作者 | PackForge 产品设计 |
-| 最近更新 | 2026-10-16 |
+| 最近更新 | 2026-10-19 |
 
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v1.18 | 2026-10-19 | 窗口最小 1080×680。设置里外观选择与变体超时输入按内容宽度排布，超时单位写在输入框后 |
+| v1.17 | 2026-10-19 | 打开工程不展开产物，构建成功后才展开。JDK 列表名称、版本、路径不可选，路径可复制并提示 |
+| v1.16 | 2026-10-19 | 设置页左侧目录随滚动高亮；工作台按工程记住上次 JDK，不改全局默认 |
+| v1.15 | 2026-10-16 | 设置可手填 Gradle 用户目录；Windows 首次使用默认目录构建时询问是否自定义。清空日志或换工程时收起构建成功 |
 | v1.14 | 2026-10-16 | 变体动态发现默认 30 秒超时，可在设置中修改；刷新时显示倒计时，可改用脚本解析 |
 | v1.13 | 2026-10-16 | 从访达启动时用登录 shell 补读 GRADLE_USER_HOME，问到才传给 Gradle |
 | v1.12 | 2026-10-15 | Gradle User Home 优先用环境变量 GRADLE_USER_HOME，未设置则用默认目录，不追加 -g |
@@ -217,6 +221,7 @@ android-packing-tools/
 |------|------|
 | 产品全称 | 匠包（当前界面语言） |
 | 窗口标题 | 匠包 — 本地 Android 打包工作台 |
+| 窗口最小尺寸 | 1080×680，避免缩得过小后工作台和设置排不下 |
 | 简短口号 | 本地锻造，不上云 |
 | 安装包名 | 匠包 |
 | 英文名 | PackForge（预留给后续国际化，当前界面不展示） |
@@ -281,7 +286,7 @@ android-packing-tools/
 |------|------|
 | 工作台 | 选项目、刷新变体、配置任务、绑定/带出本工程签名、执行、看日志、处理产物 |
 | JDK 管理 | 列表、导入本机 JDK、设默认、从列表移除（仅删登记，不删本机文件） |
-| 设置 | Android SDK 路径、应用数据目录、是否显示高级 Gradle 参数、关于与隐私声明 |
+| 设置 | 左侧目录（外观、环境、关于，滚动到对应区域时高亮）、Android SDK 路径、Gradle 用户目录、变体发现超时、高级 Gradle 参数、关于与隐私声明 |
 
 ---
 
@@ -362,12 +367,16 @@ android-packing-tools/
 
 **打包时：** 对子进程设置 `JAVA_HOME=<selected>`，并将 `<JAVA_HOME>/bin` 置于 `PATH` 前部。
 
+**按工程记住：** 工作台改选 JDK 时，只写入当前工程路径，不修改全局默认。再次打开同一路径且该 JDK 仍在登记列表中时恢复；记录已失效则界面回退全局默认，且不立刻改写这条记录，直到用户再次选择。JDK 管理里的「设为默认」仍只改全局默认。
+
 **AC：**
 
 - 至少能导入两个不同 JDK 并在打包前切换，日志或环境回显显示所用 `JAVA_HOME`。
 - 从列表移除后，本机原 JDK 目录仍在；应用内不可再选该项。
 - UI 与文档中无「下载 JDK」「缓存安装包」入口。
 - 未选 JDK 时：可回退系统默认，但需黄色警告；产品默认：**强制从已登记列表选择**。
+- 工程 A 选用一个 JDK、工程 B 选用另一个后，来回打开各自恢复；JDK 管理中的全局默认不变。
+- 记录指向已移除的登记时，打开该工程显示全局默认。
 
 ### FR-05 工程签名绑定与注入（P0）
 
@@ -421,8 +430,8 @@ android-packing-tools/
 - `cwd` 为项目 Wrapper 所在目录。
 - 工作台提供「打包前 clean」勾选。勾选时与目标任务同一 Wrapper 调用：`gradlew clean <task> …`；未勾选则不附加 `clean`。勾选状态写入本地并在下次启动时恢复（默认勾选）。
 - 合并环境：`JAVA_HOME`、`ANDROID_HOME`/`ANDROID_SDK_ROOT`（见 FR-08）、原有 `PATH`。
-- Gradle User Home：进程环境里有非空 `GRADLE_USER_HOME` 时传给 Wrapper；没有则不设置该变量，也不往命令行追加 `--gradle-user-home` 或 `-g`，由 Gradle 使用默认目录（macOS `~/.gradle`，Windows `%USERPROFILE%\.gradle`）。macOS / Linux 从访达或应用菜单启动时，进程拿不到 shell 配置里的变量，启动时用登录 shell 询问一次 `GRADLE_USER_HOME`，问到就写入本进程环境。Windows 只用进程已有的用户环境变量。
-- stdout/stderr 流式推送到 UI；支持清空、搜索、复制全部日志（已脱敏）。
+- Gradle User Home：设置里手填的路径优先。未填写时，进程环境里有非空 `GRADLE_USER_HOME` 就传给 Wrapper；没有则不设置该变量，也不往命令行追加 `--gradle-user-home` 或 `-g`，由 Gradle 使用默认目录（macOS `~/.gradle`，Windows `%USERPROFILE%\.gradle`）。macOS / Linux 从访达或应用菜单启动时，进程拿不到 shell 配置里的变量，启动时用登录 shell 询问一次 `GRADLE_USER_HOME`，问到就写入本进程环境。Windows 只用进程已有的用户环境变量。Windows 上第一次构建且仍走默认目录时先询问：自定义则打开设置并滚到 Gradle 用户目录，本次不构建；继续则完成本次构建。两种选择之后都不再询问。
+- stdout/stderr 流式推送到 UI；支持清空、搜索、复制全部日志（已脱敏）。清空日志时，若顶部是「构建成功」、日志旁是 succeeded，这两处一起收起。换成其他工程时同样收起。失败、取消和其它提示保留。
 - 取消：向进程树发送终止信号（Windows 需注意 `taskkill` / 杀进程树策略）。
 
 **AC：**
@@ -433,6 +442,8 @@ android-packing-tools/
 - 勾选 clean 时，日志命令预览可见先执行 `clean`；未勾选时预览不含 `clean`。
 - 构建成功或失败（用户取消不通知）弹出系统通知。正文为 `{rootProject.name} apk 打包成功` 或 `{rootProject.name} apk 打包失败`。`rootProject.name` 读工程 `settings.gradle(.kts)`；读不到时用工程目录名。
 - 点击通知将窗口置于前台并切到工作台。产物面板未展开时自动展开。
+- 设置中的 Gradle 用户目录非空时，诊断为「使用设置中的 GRADLE_USER_HOME」，并覆盖环境变量与登录 shell。
+- Windows 首次默认目录构建会弹出询问；选自定义不调用 Wrapper，选继续才开始本次构建。
 
 ### FR-07 产物发现与复制分享（P0）
 
@@ -541,6 +552,8 @@ gradlew.bat :app:assembleProdRelease -Pandroid.injected.signing.store.file=C:\ke
 
 **不展示** `output-metadata.json`。仅展示**本次构建相关变体**优先；同时提供「显示该模块全部产物」开关。
 
+打开工程时可以扫描已有产物，但**不展开**产物面板。构建成功后主动展开。用户点「展开」，或点击打包成功/失败通知时，仍可展开。
+
 ### 10.2 产物列表字段
 
 - 文件名、类型标签（APK/AAB/Mapping）
@@ -591,7 +604,7 @@ BuildRecord { id, request, startedAt, endedAt, exitCode, artifacts[] }  // P1 �
 
 | 数据 | 位置 |
 |------|------|
-| 配置 JSON | electron-store 默认用户数据目录（含 JDK 路径登记、`signing.bindings` 按工程路径索引；不含 JDK 二进制） |
+| 配置 JSON | electron-store 默认用户数据目录（含 JDK 路径登记、`jdk.byProject` 按工程路径记住上次选用的 JDK、`signing.bindings` 按工程路径索引；不含 JDK 二进制） |
 | 密码 | keytar service=`PackForge`，account=`signing:<profileId>:store` / `:key`（profileId 为该工程绑定内生成的 id） |
 | 本地日志（可选） | `{userData}/logs/packforge-YYYYMMDD.log` |
 

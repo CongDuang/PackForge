@@ -125,6 +125,7 @@ export async function discoverVariants(
     {
       settingsAndroidSdkPath: settings.androidSdkPath,
       allowSystemJdkFallback: settings.allowSystemJdkFallback,
+      settingsGradleUserHome: settings.gradleUserHome,
       jdkInstalls: jdkState.installs,
     },
   )

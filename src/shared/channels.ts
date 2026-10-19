@@ -19,6 +19,7 @@ export const INVOKE_METHODS = [
   'importJdk',
   'removeJdk',
   'setDefaultJdk',
+  'setProjectJdk',
   'getProjectSigning',
   'upsertProjectSigning',
   'clearProjectSigning',

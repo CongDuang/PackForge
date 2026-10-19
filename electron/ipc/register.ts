@@ -10,7 +10,7 @@ import {
   validateProject,
 } from '../services/project'
 import { cancelVariantDiscovery, discoverVariants, isBuildKind, previewTaskName } from '../services/variants'
-import { importJdk, listJdks, removeJdk, setDefaultJdk } from '../services/jdk'
+import { importJdk, listJdks, removeJdk, setDefaultJdk, setProjectJdk } from '../services/jdk'
 import {
   buildSigningInjectArgs,
   clearProjectSigning,
@@ -119,6 +119,7 @@ const handlers: Record<InvokeMethod, Handler> = {
   importJdk: (homePath) => importJdk(String(homePath ?? '')),
   removeJdk: (id) => removeJdk(String(id ?? '')),
   setDefaultJdk: (id) => setDefaultJdk(id == null || id === '' ? null : String(id)),
+  setProjectJdk: (projectPath, jdkId) => setProjectJdk(String(projectPath ?? ''), String(jdkId ?? '')),
   getProjectSigning: (projectPath) => getProjectSigning(String(projectPath ?? '')),
   upsertProjectSigning: (projectPath, input) =>
     upsertProjectSigning(String(projectPath ?? ''), parseProjectSigningInput(input)),
@@ -138,6 +139,7 @@ const handlers: Record<InvokeMethod, Handler> = {
       {
         settingsAndroidSdkPath: settings.androidSdkPath,
         allowSystemJdkFallback: settings.allowSystemJdkFallback,
+        settingsGradleUserHome: settings.gradleUserHome,
         jdkInstalls: jdkState.installs,
       },
     )

@@ -14,6 +14,13 @@ export type JdkInstall = {
   source: 'import' | 'scan'
 }
 
+/** 登记列表、全局默认，以及按工程路径记住的上次选用。 */
+export type JdkRegistry = {
+  installs: JdkInstall[]
+  defaultId: string | null
+  byProject: Record<string, string>
+}
+
 export type SigningProfileMeta = {
   id: string
   storeFile: string
@@ -62,6 +69,10 @@ export type AppSettings = {
   theme: ThemePreference
   /** 动态发现变体（gradlew tasks）的超时，秒 */
   variantDiscoverTimeoutSec: number
+  /** 手动指定的 Gradle 用户目录；空则仍走环境变量或登录 shell */
+  gradleUserHome: string
+  /** Windows 首次使用默认 Gradle 目录构建时是否已经问过 */
+  gradleUserHomePrompted: boolean
 }
 
 export const VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC = 30
@@ -122,4 +133,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   advancedGradleArgs: '',
   theme: 'system',
   variantDiscoverTimeoutSec: VARIANT_DISCOVER_TIMEOUT_DEFAULT_SEC,
+  gradleUserHome: '',
+  gradleUserHomePrompted: false,
 }

@@ -7,6 +7,7 @@ import type {
   BuildRequest,
   BuildStatusEvent,
   JdkInstall,
+  JdkRegistry,
   ProjectRef,
   ProjectSigningBinding,
   ProjectValidation,
@@ -59,10 +60,11 @@ export type PackforgeApi = {
   previewTaskName: (
     req: Pick<BuildRequest, 'module' | 'kind' | 'flavorPart' | 'buildType'>,
   ) => Promise<Result<{ taskName: string }>>
-  listJdks: () => Promise<Result<{ installs: JdkInstall[]; defaultId: string | null }>>
+  listJdks: () => Promise<Result<JdkRegistry>>
   importJdk: (homePath: string) => Promise<Result<JdkInstall>>
   removeJdk: (id: string) => Promise<Result<void>>
   setDefaultJdk: (id: string | null) => Promise<Result<void>>
+  setProjectJdk: (projectPath: string, jdkId: string) => Promise<Result<void>>
   getProjectSigning: (projectPath: string) => Promise<Result<ProjectSigningBinding | null>>
   upsertProjectSigning: (
     projectPath: string,
@@ -81,6 +83,7 @@ export type PackforgeApi = {
       javaHome: string
       androidHome: string
       diagnosis: string[]
+      gradleUserHome: string | null
     }>
   >
   startBuild: (request: BuildRequest) => Promise<Result<{ buildId: string }>>

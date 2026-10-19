@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ProjectRef, ProjectValidation } from '../shared/types'
 import Button from './ui/Button'
+import IconButton from './ui/IconButton'
 import TextField from './ui/TextField'
 
 function packforgeApi() {
@@ -135,7 +136,7 @@ export default function ProjectPicker({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-medium text-[var(--text-primary)]">项目</h2>
-          <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
+          <p className="mt-1.5 select-none text-xs leading-5 text-[var(--text-muted)]">
             选择或粘贴含 Gradle Wrapper 的工程目录。只用项目自带 gradlew / gradlew.bat。
           </p>
         </div>
@@ -190,7 +191,7 @@ export default function ProjectPicker({
       <div className="mt-4">
         <h3 className="text-xs font-medium text-[var(--text-muted)]">最近打开</h3>
         {recent.length === 0 ? (
-          <p className="mt-2 text-xs text-[var(--text-muted)]">还没有最近项目</p>
+          <p className="mt-2 select-none text-xs text-[var(--text-muted)]">还没有最近项目</p>
         ) : (
           <ul className="mt-2 space-y-1">
             {recent.map((item) => {
@@ -199,13 +200,15 @@ export default function ProjectPicker({
                 <li
                   key={item.id}
                   className={[
-                    'flex items-center gap-2 rounded-md px-2 py-1.5',
-                    active ? 'bg-[var(--bg-base)]' : 'hover:bg-[var(--bg-base)]',
+                    'flex items-center gap-2 rounded-md border-l-2 px-2 py-1.5',
+                    active
+                      ? 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,var(--bg-panel))]'
+                      : 'border-transparent hover:bg-[var(--bg-base)]',
                   ].join(' ')}
                 >
                   <button
                     type="button"
-                    className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                    className="min-w-0 flex-1 cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                     onClick={() => void openPath(item.path)}
                   >
                     <span className="block truncate text-sm text-[var(--text-primary)]">
@@ -222,16 +225,17 @@ export default function ProjectPicker({
                   >
                     编辑签名
                   </Button>
-                  <Button className="shrink-0 px-2 py-1 text-xs" onClick={() => void pinItem(item)}>
-                    {item.pinned ? '取消置顶' : '置顶'}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    className="shrink-0 px-2 py-1 text-xs"
+                  <IconButton
+                    icon={item.pinned ? 'unpin' : 'pin'}
+                    label={item.pinned ? '取消置顶' : '置顶'}
+                    onClick={() => void pinItem(item)}
+                  />
+                  <IconButton
+                    tone="danger"
+                    icon="trash"
+                    label="移除"
                     onClick={() => void removeItem(item)}
-                  >
-                    移除
-                  </Button>
+                  />
                 </li>
               )
             })}

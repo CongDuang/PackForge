@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Button from '../components/ui/Button'
+import IconButton from '../components/ui/IconButton'
 import type { JdkInstall } from '../shared/types'
 
 function packforgeApi() {
@@ -11,6 +12,7 @@ export default function JdkPage() {
   const [defaultId, setDefaultId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
@@ -32,6 +34,21 @@ export default function JdkPage() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 2000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  async function copyPath(homePath: string) {
+    try {
+      await navigator.clipboard.writeText(homePath)
+      setToast('已复制路径')
+    } catch {
+      setToast('复制失败')
+    }
+  }
 
   async function importLocal() {
     const api = packforgeApi()
@@ -90,7 +107,7 @@ export default function JdkPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold text-[var(--text-primary)]">JDK 管理</h1>
-          <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+          <p className="mt-2 select-none text-sm leading-6 text-[var(--text-muted)]">
             导入本机已有 JDK 根目录，登记路径与版本后供打包选用。移除只删登记，不碰磁盘文件。
           </p>
         </div>
@@ -113,12 +130,12 @@ export default function JdkPage() {
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-medium text-[var(--text-primary)]">已登记</h2>
           <Button variant="primary" disabled={busy} onClick={() => void importLocal()}>
-            导入本机 JDK…
+            导入本机 JDK
           </Button>
         </div>
 
         {installs.length === 0 ? (
-          <p className="text-sm leading-6 text-[var(--text-muted)]">
+          <p className="select-none text-sm leading-6 text-[var(--text-muted)]">
             还没有登记。请选择含 bin/java 的 JDK 根目录（macOS 也可选 .jdk 包）。
           </p>
         ) : (
@@ -138,12 +155,25 @@ export default function JdkPage() {
                   const isDefault = install.id === defaultId
                   return (
                     <tr key={install.id} className="border-b border-[var(--border)] last:border-b-0">
-                      <td className="py-2.5 pr-3 text-[var(--text-primary)]">{install.name}</td>
-                      <td className="py-2.5 pr-3 font-mono text-xs text-[var(--text-primary)]">{install.version}</td>
+                      <td className="select-none py-2.5 pr-3 text-[var(--text-primary)]">{install.name}</td>
+                      <td className="select-none py-2.5 pr-3 font-mono text-xs text-[var(--text-primary)]">
+                        {install.version}
+                      </td>
                       <td className="max-w-[16rem] py-2.5 pr-3">
-                        <p className="truncate font-mono text-xs text-[var(--text-muted)]" title={install.homePath}>
-                          {install.homePath}
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <IconButton
+                            tone="plain"
+                            icon="copy"
+                            label="复制路径"
+                            onClick={() => void copyPath(install.homePath)}
+                          />
+                          <p
+                            className="min-w-0 flex-1 truncate font-mono text-xs text-[var(--text-muted)] select-none"
+                            title={install.homePath}
+                          >
+                            {install.homePath}
+                          </p>
+                        </div>
                       </td>
                       <td className="py-2.5 pr-3 text-xs">
                         {isDefault ? <span className="text-[var(--accent)]">默认</span> : null}
@@ -153,9 +183,12 @@ export default function JdkPage() {
                           <Button disabled={isDefault} onClick={() => void makeDefault(install.id)}>
                             设为默认
                           </Button>
-                          <Button variant="danger" onClick={() => void removeFromList(install.id)}>
-                            移除
-                          </Button>
+                          <IconButton
+                            tone="danger"
+                            icon="trash"
+                            label="移除"
+                            onClick={() => void removeFromList(install.id)}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -166,6 +199,14 @@ export default function JdkPage() {
           </div>
         )}
       </section>
+      {toast ? (
+        <p
+          role="status"
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-md border border-[var(--border)] bg-[var(--bg-panel)] px-3 py-2 text-sm text-[var(--text-primary)] shadow-md"
+        >
+          {toast}
+        </p>
+      ) : null}
     </div>
   )
 }

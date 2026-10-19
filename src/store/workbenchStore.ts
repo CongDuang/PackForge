@@ -41,6 +41,9 @@ type WorkbenchState = {
   flavorSelections: Record<string, string>
   jdkId: string
   jdkInstalls: JdkInstall[]
+  jdkDefaultId: string | null
+  jdkByProject: Record<string, string>
+  jdkReady: boolean
   projectSigning: ProjectSigningBinding | null
   signingEditorOpen: boolean
   discovery: VariantDiscovery | null
@@ -63,6 +66,8 @@ type WorkbenchState = {
   lastError: string | null
   banner: string | null
   artifactNotice?: string
+  /** 打开设置并滚到该元素 id */
+  settingsAnchor: string | null
   setProject: (project: ProjectValidation | null) => void
   setModule: (module: string) => void
   setKind: (kind: BuildKind) => void
@@ -71,6 +76,12 @@ type WorkbenchState = {
   setFlavorSelections: (next: Record<string, string>) => void
   setJdkId: (id: string) => void
   setJdkInstalls: (installs: JdkInstall[]) => void
+  setJdkCatalog: (catalog: {
+    installs: JdkInstall[]
+    defaultId: string | null
+    byProject: Record<string, string>
+  }) => void
+  setJdkByProject: (byProject: Record<string, string>) => void
   setJdkError: (error: string | undefined) => void
   setProjectSigning: (binding: ProjectSigningBinding | null) => void
   setSigningEditorOpen: (open: boolean) => void
@@ -92,8 +103,20 @@ type WorkbenchState = {
   setLastError: (text: string | null) => void
   setBanner: (text: string | null) => void
   setArtifactNotice: (text: string | undefined) => void
+  setSettingsAnchor: (id: string | null) => void
   clearLogs: () => void
   appendLogBatch: (batch: LogLine[]) => void
+}
+
+/** 收起顶部「构建成功」和日志旁的 succeeded。其它提示保留。 */
+export function withoutBuildSuccess(state: {
+  banner: string | null
+  buildStatus: BuildUiStatus
+}): { banner: string | null; buildStatus: BuildUiStatus } {
+  return {
+    banner: state.banner === '构建成功' ? null : state.banner,
+    buildStatus: state.buildStatus === 'succeeded' ? 'idle' : state.buildStatus,
+  }
 }
 
 export const useWorkbenchStore = create<WorkbenchState>((set) => ({
@@ -104,6 +127,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   flavorSelections: {},
   jdkId: '',
   jdkInstalls: [],
+  jdkDefaultId: null,
+  jdkByProject: {},
+  jdkReady: false,
   projectSigning: null,
   signingEditorOpen: false,
   discovery: null,
@@ -122,7 +148,13 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   cleanBeforeBuild: readCleanBeforeBuild(),
   lastError: null,
   banner: null,
-  setProject: (project) => set({ project, lastError: null }),
+  settingsAnchor: null,
+  setProject: (project) =>
+    set((state) => {
+      const next = { project, lastError: null as string | null }
+      if (state.project?.path === project?.path) return next
+      return { ...next, ...withoutBuildSuccess(state) }
+    }),
   setModule: (module) => set({ module }),
   setKind: (kind) => set({ kind }),
   setBuildType: (buildType) => set({ buildType }),
@@ -133,6 +165,14 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   setFlavorSelections: (flavorSelections) => set({ flavorSelections }),
   setJdkId: (jdkId) => set({ jdkId }),
   setJdkInstalls: (jdkInstalls) => set({ jdkInstalls }),
+  setJdkCatalog: ({ installs, defaultId, byProject }) =>
+    set({
+      jdkInstalls: installs,
+      jdkDefaultId: defaultId,
+      jdkByProject: byProject,
+      jdkReady: true,
+    }),
+  setJdkByProject: (jdkByProject) => set({ jdkByProject }),
   setJdkError: (jdkError) => set({ jdkError }),
   setProjectSigning: (projectSigning) => set({ projectSigning }),
   setSigningEditorOpen: (signingEditorOpen) => set({ signingEditorOpen }),
@@ -154,11 +194,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
     })),
   setLogExpanded: (logExpanded) => set({ logExpanded }),
   setLogHeight: (logHeight) => set({ logHeight }),
-  setArtifacts: (artifacts) =>
-    set({
-      artifacts,
-      ...(artifacts.length > 0 ? { artifactsExpanded: true } : {}),
-    }),
+  setArtifacts: (artifacts) => set({ artifacts }),
   setArtifactsExpanded: (artifactsExpanded) => set({ artifactsExpanded }),
   setSelectedArtifactPaths: (selectedArtifactPaths) =>
     set((state) => ({
@@ -175,7 +211,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   setLastError: (lastError) => set({ lastError }),
   setBanner: (banner) => set({ banner }),
   setArtifactNotice: (artifactNotice) => set({ artifactNotice }),
-  clearLogs: () => set({ logLines: [] }),
+  setSettingsAnchor: (settingsAnchor) => set({ settingsAnchor }),
+  clearLogs: () => set((state) => ({ logLines: [], ...withoutBuildSuccess(state) })),
   appendLogBatch: (batch) =>
     set((state) => {
       const next = [...state.logLines, ...batch]
